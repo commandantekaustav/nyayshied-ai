@@ -43,6 +43,10 @@ class Settings:
     GCP_PROJECT_ID: str = os.getenv("GCP_PROJECT_ID", "")
     GCP_LOCATION: str = os.getenv("GCP_LOCATION", "us-central1")
     GEMINI_API_KEY: str = os.getenv("GEMINI_API_KEY", "")
+    # Vertex AI Search configuration
+    VERTEX_SEARCH_DATA_STORE_ID: str = os.getenv("VERTEX_SEARCH_DATA_STORE_ID", "")
+    VERTEX_SEARCH_LOCATION: str = os.getenv("VERTEX_SEARCH_LOCATION", "global")
+    VERTEX_SEARCH_SERVING_CONFIG: str = os.getenv("VERTEX_SEARCH_SERVING_CONFIG", "default_config")
 
     # Security & Encryption
     FERNET_KEY: str = ensure_fernet_key(os.getenv("FERNET_KEY"))

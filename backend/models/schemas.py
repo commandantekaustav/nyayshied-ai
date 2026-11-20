@@ -44,6 +44,12 @@ class SpatialTriageResult(BaseModel):
 
 
 class PriceGougingAudit(BaseModel):
+    
+    pass
+
+class LegalRagResponse(BaseModel):
+    query: str = Field(..., description="ইউজার রিকোয়েস্ট টেক্সট")
+    retrieved_documents: List[str] = Field(..., description="Vertex AI Search থেকে পাওয়া ডকুমেন্টের টেক্সট তালিকা")
     """
     Step 2: Price-Gouging Rule Engine Output.
     Deterministically audits walk-in service center quotation against genuine OEM bill of materials.
