@@ -470,7 +470,7 @@ npm run dev -- --host 0.0.0.0 --port 5173
 
 ## 🧬 Architectural Lineage & Credits to Clause-n-Effect
 
-NyayShield AI is an architectural derivative and direct engineering evolution of [**Clause-n-Effect**](https://github.com/commandantekaustav/clause-n-effect), the open-source corporate legal compliance and forensic auditing engine authored by **Kaustav Kundu**.
+NyayShield AI is an architectural derivative and direct engineering evolution of [**Clause-n-Effect**](https://github.com/commandantekaustav/clause-n-effect), the open-source corporate legal compliance and forensic auditing engine authored by **Kaustav Basu**.
 
 ```mermaid
 flowchart TD
@@ -579,7 +579,7 @@ flowchart TD
 ---
 
 ## 👥 Contributors & Branch Organization
-- **Kaustav Kundu** (`main`) — Core Multimodal AI, Architecture, Cryptography & Statutory Engine.
+- **Kaustav Basu** (`main`) — Core Multimodal AI, Architecture, Cryptography & Statutory Engine.
 - **Anwesha** (`feat/b1-claims-enhancement`) — B1 Enterprise Claims & UI Dashboards.
 - **Ishika** (`test/ishika-hardware-eval`) — Hardware Defect Evaluation & Alpha Testing.
 
