@@ -1,0 +1,19 @@
+# 48‑Hour SLA Notice Template (filled)
+To: HP Service Center
+From: NyayShield AI (Ishika Patel)
+Date: 2026-11-21
+Reference: Claim ID NYAY-2026-HP-001
+Subject: 48‑Hour Service Level Agreement (SLA) Notice
+
+You are hereby issued a notice that you have 48 hours remaining to remediate the identified service deficiency as described below:
+
+Deficiency Summary:
+- The service centre unjustifiably quoted INR 25,000 for replacement of OEM part #N13327-001 (B‑cover LCD bezel) while the fair OEM cost is INR 2,500, representing a 10× price gouging and violation of CPA 2019 Section 2(11) & 2(47).
+
+Failure to comply within the stipulated 48‑hour period will trigger escalation to the Consumer Disputes Redressal Commission via e‑Jagriti as per Section 35 of the Consumer Protection Act, 2019.
+
+Please acknowledge receipt of this notice and confirm corrective actions.
+
+Sincerely,
+Ishika Patel
+NyayShield AI

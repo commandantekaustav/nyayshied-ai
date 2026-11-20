@@ -1,0 +1,25 @@
+# NCH 1915 Docket Template (filled)
+# ------------------------------------------------------
+# Docket No.: NCH-2026-001
+# Date: 2026-11-21
+# Parties:
+#   - Complainant: Ishika Patel (NyayShield AI)
+#   - Respondent: HP Service Center
+# Subject: Unfair Service Charge and Warranty Denial
+#
+# Description of Issue:
+# The service center quoted INR 25,000 for replacement of OEM part #N13327-001 (B-cover LCD bezel) while the fair cost is INR 2,500, constituting price gouging and violation of Consumer Protection Act 2019 Sections 2(11) and 2(47).
+#
+# Relief Sought:
+# - Refund of overcharged amount INR 22,500
+# - Immediate in‑warranty repair at zero cost
+# - Formal apology and assurance against future misconduct
+#
+# Supporting Documents:
+# - Service invoice #SOA370366199413
+# - Photographs of hinge failure
+# - Correspondence logs
+#
+# Signature:
+# Ishika Patel
+# ------------------------------------------------------
