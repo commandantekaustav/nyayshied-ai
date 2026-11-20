@@ -1,7 +1,7 @@
 # DCDRC e-Jagriti Section 35 Petition Template (filled)
 Petition No.: DCDRC-2026-001
 Date: 2026-11-21
-Complainant: Ishika Patel (NyayShield AI)
+Complainant: Ishika (NyayShield AI)
 Respondent: HP Service Center
 Case Reference: Claim ID NYAY-2026-HP-001
 
@@ -20,6 +20,6 @@ Supporting Evidence:
 - Communication logs
 
 Declaration:
-I, Ishika Patel, hereby declare that the facts stated above are true to the best of my knowledge and belief.
+I, Ishika , hereby declare that the facts stated above are true to the best of my knowledge and belief.
 
-Signature: Ishika Patel
+Signature: Ishika
