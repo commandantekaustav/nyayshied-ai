@@ -16,7 +16,8 @@ import {
   RotateCw,
   Clock,
   Bug,
-  CheckCircle2
+  CheckCircle2,
+  Cpu
 } from 'lucide-react';
 
 interface JudgeDrawerProps {
@@ -28,7 +29,7 @@ interface JudgeDrawerProps {
 export const JudgeDrawer: React.FC<JudgeDrawerProps> = ({ claimData, onOpenTracker }) => {
   const [isOpen, setIsOpen] = useState(true);
   const [copied, setCopied] = useState(false);
-  const [activeTab, setActiveTab] = useState<'json' | 'states' | 'rubric' | 'audit' | 'issues'>('json');
+  const [activeTab, setActiveTab] = useState<'json' | 'states' | 'rubric' | 'audit' | 'issues' | 'arch'>('json');
   const [auditLogs, setAuditLogs] = useState<AuditLogEntry[]>([]);
   const [isRefreshingLogs, setIsRefreshingLogs] = useState(false);
 
@@ -181,7 +182,19 @@ export const JudgeDrawer: React.FC<JudgeDrawerProps> = ({ claimData, onOpenTrack
               }`}
             >
               <Bug className="w-3.5 h-3.5 text-purple-400" />
-              <span>Issues (5/5)</span>
+              <span>Issues</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setActiveTab('arch')}
+              className={`flex items-center space-x-1 px-2.5 py-2 rounded-t-lg font-medium transition text-[11px] ${
+                activeTab === 'arch'
+                  ? 'bg-slate-950 text-cyan-400 border-t-2 border-cyan-500'
+                  : 'text-slate-400 hover:text-slate-200'
+              }`}
+            >
+              <Cpu className="w-3.5 h-3.5 text-cyan-400" />
+              <span>Arch</span>
             </button>
           </div>
 
@@ -451,6 +464,102 @@ export const JudgeDrawer: React.FC<JudgeDrawerProps> = ({ claimData, onOpenTrack
                       <p className="text-[11px] text-slate-400">{iss.f}</p>
                     </div>
                   ))}
+                </div>
+              </div>
+            )}
+
+            {activeTab === 'arch' && (
+              <div className="space-y-4 font-sans text-xs">
+                <div className="p-3 rounded-xl bg-cyan-950/20 border border-cyan-500/30">
+                  <div className="flex items-center justify-between">
+                    <h4 className="font-bold text-cyan-300 flex items-center gap-1.5">
+                      <Cpu className="w-4 h-4 text-cyan-400" />
+                      Engineering Architecture & Models
+                    </h4>
+                    <span className="font-mono text-[10px] bg-cyan-500/10 text-cyan-400 border border-cyan-500/20 px-2 py-0.5 rounded font-semibold">
+                      v2.0 Synchronized
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-slate-400 mt-1">
+                    Continuous Documentation & Diagram Engine with periodic auto-synchronization.
+                  </p>
+                </div>
+
+                {/* Core Pipeline Layers */}
+                <div className="space-y-2">
+                  <div className="text-[11px] font-bold text-slate-300 uppercase tracking-wider font-mono">
+                    Core Engineering Topology
+                  </div>
+                  <div className="grid grid-cols-1 gap-2 font-mono text-[11px]">
+                    <div className="p-2.5 rounded-lg bg-slate-950 border border-slate-800 flex items-start gap-2.5">
+                      <span className="w-5 h-5 rounded bg-emerald-500/10 text-emerald-400 flex items-center justify-center font-bold text-xs shrink-0">1</span>
+                      <div>
+                        <div className="font-bold text-emerald-300">Edge PWA & Reticle Canvas</div>
+                        <div className="text-slate-400 text-[10px]">React 18 + Vite • Normalized [ymin, xmin, ymax, xmax] coordinates</div>
+                      </div>
+                    </div>
+                    <div className="p-2.5 rounded-lg bg-slate-950 border border-slate-800 flex items-start gap-2.5">
+                      <span className="w-5 h-5 rounded bg-blue-500/10 text-blue-400 flex items-center justify-center font-bold text-xs shrink-0">2</span>
+                      <div>
+                        <div className="font-bold text-blue-300">FastAPI Gateway & Cryptographic Vault</div>
+                        <div className="text-slate-400 text-[10px]">SHA-256 evidence lock • Fernet AES-128 PII encryption</div>
+                      </div>
+                    </div>
+                    <div className="p-2.5 rounded-lg bg-slate-950 border border-slate-800 flex items-start gap-2.5">
+                      <span className="w-5 h-5 rounded bg-amber-500/10 text-amber-400 flex items-center justify-center font-bold text-xs shrink-0">3</span>
+                      <div>
+                        <div className="font-bold text-amber-300">Multimodal Defect Triage (Gemini 2.5 Flash)</div>
+                        <div className="text-slate-400 text-[10px]">Spatial bounding box localization • Bayer sensor fake detector</div>
+                      </div>
+                    </div>
+                    <div className="p-2.5 rounded-lg bg-slate-950 border border-slate-800 flex items-start gap-2.5">
+                      <span className="w-5 h-5 rounded bg-rose-500/10 text-rose-400 flex items-center justify-center font-bold text-xs shrink-0">4</span>
+                      <div>
+                        <div className="font-bold text-rose-300">Price-Gouging Math Engine</div>
+                        <div className="text-slate-400 text-[10px]">BOM cost benchmark • Multiplier threshold ≥ 2.0x (CPA 2019 Sec 2(47))</div>
+                      </div>
+                    </div>
+                    <div className="p-2.5 rounded-lg bg-slate-950 border border-slate-800 flex items-start gap-2.5">
+                      <span className="w-5 h-5 rounded bg-purple-500/10 text-purple-400 flex items-center justify-center font-bold text-xs shrink-0">5</span>
+                      <div>
+                        <div className="font-bold text-purple-300">Statutory Critic & Drafter (Gemma 3)</div>
+                        <div className="text-slate-400 text-[10px]">Grounded legal notices (EN/HI/BN) • e-Jagriti Sec 35 digital filing</div>
+                      </div>
+                    </div>
+                    <div className="p-2.5 rounded-lg bg-slate-950 border border-slate-800 flex items-start gap-2.5">
+                      <span className="w-5 h-5 rounded bg-teal-500/10 text-teal-400 flex items-center justify-center font-bold text-xs shrink-0">6</span>
+                      <div>
+                        <div className="font-bold text-teal-300">Dispute Redressal Loop & Web Speech</div>
+                        <div className="text-slate-400 text-[10px]">48h SLA state machine • Native browser speech narration</div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Synchronized Documentation Artifacts */}
+                <div className="p-3 rounded-lg bg-slate-950 border border-slate-800 space-y-2">
+                  <div className="text-[11px] font-bold text-cyan-300 font-mono flex items-center justify-between">
+                    <span>Synchronized System Artifacts</span>
+                    <span className="text-[10px] text-emerald-400 font-normal">Active in repo</span>
+                  </div>
+                  <ul className="space-y-1.5 text-[11px] text-slate-400 font-mono">
+                    <li className="flex items-center gap-1.5">
+                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                      <span>README.md — Complete diagrams & manual</span>
+                    </li>
+                    <li className="flex items-center gap-1.5">
+                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                      <span>docs/ARCHITECTURE.md — C4 & sequence models</span>
+                    </li>
+                    <li className="flex items-center gap-1.5">
+                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                      <span>docs/SYSTEM_DOCUMENTATION.md — Technical spec</span>
+                    </li>
+                    <li className="flex items-center gap-1.5">
+                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                      <span>docs/API_REFERENCE.md — OpenAPI contracts</span>
+                    </li>
+                  </ul>
                 </div>
               </div>
             )}
