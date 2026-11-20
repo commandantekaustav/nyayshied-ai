@@ -7,7 +7,9 @@ import {
   Scale, 
   ShieldCheck, 
   FileText, 
-  Globe
+  Globe,
+  Volume2,
+  VolumeX
 } from 'lucide-react';
 
 interface Screen3NoticeProps {
@@ -18,6 +20,7 @@ export const Screen3Notice: React.FC<Screen3NoticeProps> = ({ claimData }) => {
   const [language, setLanguage] = useState<LanguageTab>('en');
   const [docType, setDocType] = useState<'notice' | 'crm'>('notice');
   const [copied, setCopied] = useState(false);
+  const [isSpeaking, setIsSpeaking] = useState(false);
 
   const legal = claimData.legal_package;
 
@@ -29,6 +32,27 @@ export const Screen3Notice: React.FC<Screen3NoticeProps> = ({ claimData }) => {
     : language === 'bn' 
     ? legal.notice_bengali 
     : legal.notice_english;
+
+  const handleToggleSpeech = () => {
+    if (!('speechSynthesis' in window)) {
+      alert('Speech synthesis is not supported in this browser.');
+      return;
+    }
+
+    if (isSpeaking) {
+      window.speechSynthesis.cancel();
+      setIsSpeaking(false);
+    } else {
+      window.speechSynthesis.cancel();
+      const utterance = new SpeechSynthesisUtterance(currentText.slice(0, 400));
+      utterance.lang = language === 'hi' ? 'hi-IN' : language === 'bn' ? 'bn-IN' : 'en-IN';
+      utterance.rate = 0.95;
+      utterance.onend = () => setIsSpeaking(false);
+      utterance.onerror = () => setIsSpeaking(false);
+      window.speechSynthesis.speak(utterance);
+      setIsSpeaking(true);
+    }
+  };
 
   const handleCopy = () => {
     navigator.clipboard.writeText(currentText);
@@ -164,7 +188,19 @@ export const Screen3Notice: React.FC<Screen3NoticeProps> = ({ claimData }) => {
               {docType === 'crm' ? '48-Hour Ultimatum to CRM Desk' : 'Statutory Pre-Litigation Notice'}
             </h3>
           </div>
-          <div className="flex items-center space-x-2">
+          <div className="flex items-center space-x-1.5">
+            <button
+              onClick={handleToggleSpeech}
+              className={`flex items-center space-x-1 px-2.5 py-1 rounded-lg border text-[11px] font-medium transition ${
+                isSpeaking 
+                  ? 'bg-purple-500/20 text-purple-300 border-purple-500/40 animate-pulse'
+                  : 'bg-slate-950 border-slate-800 hover:bg-slate-800 text-slate-300'
+              }`}
+              title="Read Notice Aloud (Accessibility Voice Synthesis)"
+            >
+              {isSpeaking ? <VolumeX className="w-3.5 h-3.5 text-purple-400" /> : <Volume2 className="w-3.5 h-3.5 text-purple-400" />}
+              <span>{isSpeaking ? 'Stop' : 'Listen'}</span>
+            </button>
             <button
               onClick={handleCopy}
               className="flex items-center space-x-1 px-2.5 py-1 rounded-lg bg-slate-950 border border-slate-800 hover:bg-slate-800 text-[11px] text-slate-300 transition"
