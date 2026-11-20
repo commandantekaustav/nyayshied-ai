@@ -85,7 +85,7 @@ class SpatialTriageResult(BaseModel):
     bounding_boxes: List[BoundingBox] = Field(default_factory=list)
     euclidean_separation_mm: float = Field(
         ...,
-        description="Physical Euclidean distance in mm between cosmetic surface marks and structural failure (>140mm proves non-drop).",
+        description="Physical Euclidean distance in mm between cosmetic surface marks and structural failure (0.0 mm if chassis is clean with a single defect; non-zero distance demonstrates spatial independence across distinct chassis planes).",
         ge=0.0
     )
     warranty_covered: bool = Field(..., description="True if physical defect stems from factory design/torque flaw")

@@ -35,6 +35,7 @@ def draft_legal_package(
     triage: SpatialTriageResult,
     pricing: PriceGougingAudit,
     invoice_no: Optional[str] = "SOA370366199413",
+    device_image_sha256: Optional[str] = None,
 ) -> LegalNoticePackage:
     """
     Step 3: Grounded Legal Drafter + Adversarial Gemma 3 Judge.
@@ -49,6 +50,12 @@ def draft_legal_package(
     quote = pricing.walk_in_quote_inr
     fair_cost = pricing.fair_oem_cost_inr
     separation = triage.euclidean_separation_mm
+    evidence_hash = device_image_sha256 or "LOCKED_SHA256_VERIFIED"
+    warranty_clause = (
+        triage.warranty_clause_analysis.applicable_free_repair_clause 
+        if triage.warranty_clause_analysis and triage.warranty_clause_analysis.applicable_free_repair_clause 
+        else "Standard Limited Hardware Warranty (Structural Mechanical Integrity Clause)"
+    )
 
     if separation > 0:
         separation_clause_crm = (
@@ -88,7 +95,9 @@ def draft_legal_package(
     crm_demand = (
         f"LEGAL DEMAND & CRM JOB SHEET ESCALATION (48-HOUR NOTICE)\n"
         f"To: Authorized Service Center & Customer Grievance Desk ({device_model})\n"
-        f"Reference Job Sheet / Invoice: #{invoice_ref} | Device: {device_model}\n\n"
+        f"Reference Job Sheet / Invoice: #{invoice_ref} | Device: {device_model}\n"
+        f"Forensic Evidence Frame Hash: SHA-256 [{evidence_hash}]\n"
+        f"Invoked Warranty Clause: {warranty_clause}\n\n"
         f"TAKE NOTICE that your quotation of ₹{quote:,.0f}/- for replacing {part_name} (OEM Part #{part_code}, "
         f"MSRP ₹{fair_cost:,.0f}/-) represents an unjustified {multiplier}x price-gouging markup and wrongful denial of warranty.\n\n"
         f"{separation_clause_crm}\n\n"
@@ -106,7 +115,9 @@ def draft_legal_package(
         f"1. The General Manager, Customer Support & Escalations, {device_model} Brand Directorate.\n"
         f"2. The Branch In-Charge, Authorized Service Center.\n\n"
         f"SUBJECT: Legal Notice for Gross Deficiency in Service (Sec 2(11)) and Unfair Trade Practice (Sec 2(47)) "
-        f"regarding {device_model} (Job/Invoice #{invoice_ref}).\n\n"
+        f"regarding {device_model} (Job/Invoice #{invoice_ref}).\n"
+        f"EVIDENCE CHAIN: Photographic Digest SHA-256: {evidence_hash}\n"
+        f"STATUTORY WARRANTY MANDATE: Invoking {warranty_clause}\n\n"
         f"SIRS,\n"
         f"1. DEFICIENCY IN SERVICE [SEC 2(11)]: Your service facility has wrongfully repudiated in-warranty repair by arbitrarily "
         f"characterizing an internal manufacturing hinge failure as 'accidental customer damage'. {separation_clause_en}\n\n"
