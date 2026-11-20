@@ -7,6 +7,7 @@ import { Screen1Input } from './components/screens/Screen1Input';
 import { Screen2Forensics } from './components/screens/Screen2Forensics';
 import { Screen3Notice } from './components/screens/Screen3Notice';
 import { Screen4Tracker } from './components/screens/Screen4Tracker';
+import { IssueTrackerModal } from './components/IssueTrackerModal';
 import { GOLDEN_CASE_DATA, generateLaptopSampleImage } from './data/goldenCase';
 import { analyzeClaimAPI } from './services/api';
 
@@ -16,9 +17,16 @@ export const App: React.FC = () => {
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [invoiceFile, setInvoiceFile] = useState<File | null>(null);
   const [walkInQuote, setWalkInQuote] = useState<number>(20000);
+  const [brandName, setBrandName] = useState<string>("HP");
+  const [modelName, setModelName] = useState<string>("");
+  const [purchaseDate, setPurchaseDate] = useState<string>("");
+  const [purchaseType, setPurchaseType] = useState<string>("Standard 1-Year Limited Warranty");
+  const [userDescription, setUserDescription] = useState<string>("");
+  const [userAnnotation, setUserAnnotation] = useState<[number, number, number, number] | null>(null);
   const [claimData, setClaimData] = useState<ClaimAnalysisResponse | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [isApproved, setIsApproved] = useState<boolean>(false);
+  const [isTrackerOpen, setIsTrackerOpen] = useState<boolean>(false);
 
   // Fast-track prefill for Hackathon Judges: Live Case #001
   const handleLoadGoldenCase = () => {
@@ -26,6 +34,12 @@ export const App: React.FC = () => {
     const sampleImg = generateLaptopSampleImage();
     setImagePreview(sampleImg);
     setWalkInQuote(20000);
+    setBrandName("HP");
+    setModelName("Victus 15-fa1310tx");
+    setPurchaseDate("2024-03-15");
+    setPurchaseType("Standard 1-Year Limited Warranty");
+    setUserDescription("Left hinge seized and detached inner bezel during standard lid opening.");
+    setUserAnnotation([735, 78, 895, 265]);
     setClaimData(GOLDEN_CASE_DATA);
     setIsApproved(false);
 
@@ -40,7 +54,18 @@ export const App: React.FC = () => {
     if (activeScreen === 1) {
       setIsLoading(true);
       try {
-        const result = await analyzeClaimAPI(deviceImage, invoiceFile, walkInQuote, false);
+        const result = await analyzeClaimAPI({
+          deviceImageFile: deviceImage,
+          invoiceFile,
+          walkInQuoteInr: walkInQuote,
+          useGoldenCase: false,
+          brandName,
+          modelName,
+          purchaseDate,
+          purchaseType,
+          userDescription,
+          userAnnotation,
+        });
         setClaimData(result);
         if (!imagePreview) {
           setImagePreview(generateLaptopSampleImage());
@@ -72,6 +97,7 @@ export const App: React.FC = () => {
         {/* Sticky Mobile Header */}
         <Header
           onLoadGoldenCase={handleLoadGoldenCase}
+          onOpenTracker={() => setIsTrackerOpen(true)}
           isLoading={isLoading}
           activeScreen={activeScreen}
         />
@@ -84,12 +110,24 @@ export const App: React.FC = () => {
               imagePreview={imagePreview}
               invoiceFile={invoiceFile}
               walkInQuote={walkInQuote}
+              brandName={brandName}
+              modelName={modelName}
+              purchaseDate={purchaseDate}
+              purchaseType={purchaseType}
+              userDescription={userDescription}
+              userAnnotation={userAnnotation}
               onDeviceImageChange={(file, preview) => {
                 setDeviceImage(file);
                 setImagePreview(preview);
               }}
               onInvoiceFileChange={setInvoiceFile}
               onQuoteChange={setWalkInQuote}
+              onBrandChange={setBrandName}
+              onModelChange={setModelName}
+              onPurchaseDateChange={setPurchaseDate}
+              onPurchaseTypeChange={setPurchaseType}
+              onUserDescriptionChange={setUserDescription}
+              onAnnotationChange={setUserAnnotation}
               onLoadGoldenCase={handleLoadGoldenCase}
               isLoading={isLoading}
             />
@@ -130,6 +168,13 @@ export const App: React.FC = () => {
       <JudgeDrawer
         claimData={claimData}
         activeScreen={activeScreen}
+        onOpenTracker={() => setIsTrackerOpen(true)}
+      />
+
+      {/* Alpha Tester Live Issue Tracker Modal */}
+      <IssueTrackerModal
+        isOpen={isTrackerOpen}
+        onClose={() => setIsTrackerOpen(false)}
       />
     </div>
   );

@@ -1,13 +1,19 @@
 import React from 'react';
-import { ShieldCheck, Scale, Cpu, Zap } from 'lucide-react';
+import { ShieldCheck, Scale, Zap, Bug } from 'lucide-react';
 
 interface HeaderProps {
   onLoadGoldenCase: () => void;
+  onOpenTracker?: () => void;
   isLoading: boolean;
   activeScreen: number;
 }
 
-export const Header: React.FC<HeaderProps> = ({ onLoadGoldenCase, isLoading, activeScreen }) => {
+export const Header: React.FC<HeaderProps> = ({ 
+  onLoadGoldenCase, 
+  onOpenTracker, 
+  isLoading, 
+  activeScreen 
+}) => {
   return (
     <header className="sticky top-0 z-40 bg-slate-950/90 backdrop-blur-md border-b border-slate-800/80 px-4 py-3">
       <div className="flex items-center justify-between">
@@ -32,7 +38,17 @@ export const Header: React.FC<HeaderProps> = ({ onLoadGoldenCase, isLoading, act
         </div>
 
         {/* Header Right Actions */}
-        <div className="flex items-center space-x-2">
+        <div className="flex items-center space-x-1.5">
+          {onOpenTracker && (
+            <button
+              onClick={onOpenTracker}
+              className="flex items-center space-x-1 px-2.5 py-1 rounded-lg bg-purple-500/15 hover:bg-purple-500/25 border border-purple-500/30 text-purple-300 text-xs font-bold transition active:scale-95"
+              title="View Alpha Tester Issue Tracker"
+            >
+              <Bug className="w-3.5 h-3.5 text-purple-400" />
+              <span>Issues</span>
+            </button>
+          )}
           <button
             onClick={onLoadGoldenCase}
             disabled={isLoading}
@@ -42,11 +58,6 @@ export const Header: React.FC<HeaderProps> = ({ onLoadGoldenCase, isLoading, act
             <Zap className="w-3.5 h-3.5 fill-amber-300" />
             <span>Case #001</span>
           </button>
-          <div className="hidden sm:flex items-center space-x-1 bg-slate-900 border border-slate-800 px-2 py-1 rounded-lg text-[10px] text-slate-300">
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping" />
-            <Cpu className="w-3 h-3 text-emerald-400" />
-            <span className="font-mono text-emerald-400 font-semibold">Vertex AI</span>
-          </div>
         </div>
       </div>
 

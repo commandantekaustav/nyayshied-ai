@@ -5,9 +5,41 @@ export interface BoundingBox {
   part_type: string;
   defect_classification: 'MANUFACTURING_DEFECT' | 'COSMETIC_WEAR' | 'IMPACT_DAMAGE' | 'NORMAL_WEAR';
   confidence: number;
+  is_user_annotated?: boolean;
+}
+
+export interface AIAuthenticityCheck {
+  is_authentic: boolean;
+  ai_generated_probability: number;
+  authenticity_verdict: 'AUTHENTIC_PHYSICAL_DEVICE' | 'SUSPECTED_AI_SYNTHETIC';
+  forensic_authenticity_notes: string;
+}
+
+export interface UserAnnotationVerification {
+  user_box_2d?: [number, number, number, number] | null;
+  damage_verified: boolean;
+  component_name: string;
+  defect_type: string;
+  classification: 'MANUFACTURING_DEFECT' | 'COSMETIC_WEAR' | 'IMPACT_DAMAGE' | 'NORMAL_WEAR';
+  forensic_report: string;
+}
+
+export interface UnannotatedDamage {
+  box_2d: [number, number, number, number];
+  label: string;
+  classification: 'COSMETIC_WEAR' | 'MANUFACTURING_DEFECT' | 'IMPACT_DAMAGE' | 'NORMAL_WEAR';
+  separation_from_primary_mm: number;
+}
+
+export interface WarrantyClauseAnalysis {
+  eligible_for_free_repair: boolean;
+  applicable_free_repair_clause: string;
+  damages_not_covered: string[];
+  legal_remedy_summary: string;
 }
 
 export interface SpatialTriageResult {
+  brand_name?: string;
   device_model: string;
   defect_summary: string;
   primary_fault_part_code: string;
@@ -17,6 +49,11 @@ export interface SpatialTriageResult {
   euclidean_separation_mm: number;
   warranty_covered: boolean;
   causation_analysis: string;
+  ai_authenticity?: AIAuthenticityCheck;
+  user_annotation_verification?: UserAnnotationVerification | null;
+  unannotated_damages?: UnannotatedDamage[];
+  warranty_clause_analysis?: WarrantyClauseAnalysis | null;
+  inference_latency_ms?: number;
 }
 
 export interface PriceGougingAudit {
@@ -46,6 +83,14 @@ export interface StateLoopItem {
   description: string;
 }
 
+export interface AuditLogEntry {
+  timestamp: string;
+  action: string;
+  latency_ms: number;
+  model_used: string;
+  details: string;
+}
+
 export interface ClaimAnalysisResponse {
   claim_id: string;
   case_number: string;
@@ -59,6 +104,7 @@ export interface ClaimAnalysisResponse {
   legal_package: LegalNoticePackage;
   state_loop: StateLoopItem[];
   fernet_encrypted_telemetry: string;
+  audit_logs?: AuditLogEntry[];
 }
 
 export type ActiveScreen = 1 | 2 | 3 | 4;

@@ -62,8 +62,8 @@ class Settings:
     ]
 
     # Models
-    VERTEX_MODEL_ID: str = os.getenv("VERTEX_MODEL_ID", "gemini-2.5-pro")
-    CRITIC_MODEL_ID: str = os.getenv("CRITIC_MODEL_ID", "gemma-3")
+    VERTEX_MODEL_ID: str = os.getenv("VERTEX_MODEL_ID", "gemini-3.5-flash")
+    CRITIC_MODEL_ID: str = os.getenv("CRITIC_MODEL_ID", "gemini-3.5-flash")
 
     # Storage paths
     METRICS_LOG_PATH: Path = BACKEND_DIR / os.getenv("METRICS_LOG_PATH", "metrics.jsonl")

@@ -9,6 +9,7 @@ export const GOLDEN_CASE_DATA: ClaimAnalysisResponse = {
   device_image_sha256: "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
   invoice_sha256: "a1b2c3d4e5f67890abcdef1234567890abcdef1234567890abcdef1234567890",
   triage: {
+    brand_name: "HP",
     device_model: "HP Victus 15-fa1310tx",
     defect_summary: "Left display hinge torque seizure inducing tensile stress fracture and detachment of the B-cover display bezel (Part #N13327-001). Isolated cosmetic hairline scratch detected on right C-cover palmrest (Part #N13299-001).",
     primary_fault_part_code: "N13327-001",
@@ -22,6 +23,7 @@ export const GOLDEN_CASE_DATA: ClaimAnalysisResponse = {
         part_type: "B-cover bezel",
         defect_classification: "MANUFACTURING_DEFECT",
         confidence: 0.985,
+        is_user_annotated: true,
       },
       {
         box_2d: [820, 715, 875, 860],
@@ -30,11 +32,43 @@ export const GOLDEN_CASE_DATA: ClaimAnalysisResponse = {
         part_type: "C-cover palmrest",
         defect_classification: "COSMETIC_WEAR",
         confidence: 0.942,
+        is_user_annotated: false,
       },
     ],
     euclidean_separation_mm: 168.4,
     warranty_covered: true,
     causation_analysis: "Geometric separation between the cosmetic palmrest mark and the structural hinge failure is 168.4 mm (>140 mm threshold). This physical distance refutes service center claims of customer impact/drop damage. The left hinge failure is characteristic of factory hinge-overtightening (known HP Victus 15-fa chassis stress bulletin) and must be repaired under manufacturer warranty.",
+    ai_authenticity: {
+      is_authentic: true,
+      ai_generated_probability: 0.015,
+      authenticity_verdict: "AUTHENTIC_PHYSICAL_DEVICE",
+      forensic_authenticity_notes: "Bayer CFA sensor noise distribution, uniform sub-pixel micro-reflections, and coherent illumination vectors verify this is an authentic physical photograph with 98.5% confidence.",
+    },
+    user_annotation_verification: {
+      user_box_2d: [735, 78, 895, 265],
+      damage_verified: true,
+      component_name: "B-Cover Bezel & Left Display Hinge Pivot",
+      defect_type: "Tensile Torque Hinge Fracture & Bezel Separation",
+      classification: "MANUFACTURING_DEFECT",
+      forensic_report: "Verification of the marked square confirms structural detachment of the B-cover inner bezel. High torque resistance in the factory-torqued left hinge bracket transferred cyclic shear force directly into the plastic clips rather than the chassis backbone, causing mechanical failure during standard lid opening cycles.",
+    },
+    unannotated_damages: [
+      {
+        box_2d: [820, 715, 875, 860],
+        label: "Superficial hairline friction mark on right palmrest",
+        classification: "COSMETIC_WEAR",
+        separation_from_primary_mm: 168.4,
+      },
+    ],
+    warranty_clause_analysis: {
+      eligible_for_free_repair: true,
+      applicable_free_repair_clause: "HP Standard Limited Warranty (Section 3.1: Material & Workmanship Structural Defect Clause) & CPA 2019 Sec 2(11)",
+      damages_not_covered: [
+        "Cosmetic hairline surface scratch on right palmrest (aesthetic only, non-functional)",
+      ],
+      legal_remedy_summary: "Entitled to 100% free OEM replacement of B-Cover Bezel Assembly (Part #N13327-001) under manufacturer statutory warranty without tying service to palmrest replacement.",
+    },
+    inference_latency_ms: 342.0,
   },
   pricing: {
     walk_in_quote_inr: 20000.0,
@@ -145,6 +179,36 @@ export const GOLDEN_CASE_DATA: ClaimAnalysisResponse = {
     },
   ],
   fernet_encrypted_telemetry: "gAAAAABnh1L23...[FERNET_AES128_HMAC_ENCRYPTED_TELEMETRY_RECORD]",
+  audit_logs: [
+    {
+      timestamp: new Date().toISOString(),
+      action: "SPATIAL_DEFECT_TRIAGE",
+      latency_ms: 342.0,
+      model_used: "gemini-3.5-flash",
+      details: "Analyzed uploaded frame with 2D bounding boxes and user annotation verification.",
+    },
+    {
+      timestamp: new Date().toISOString(),
+      action: "AI_FAKE_IMAGE_CHECK",
+      latency_ms: 120.0,
+      model_used: "gemini-3.5-flash",
+      details: "Confirmed authentic camera capture (0.015 AI synthetic score).",
+    },
+    {
+      timestamp: new Date().toISOString(),
+      action: "PRICE_GOUGING_AUDIT",
+      latency_ms: 18.0,
+      model_used: "deterministic-rules-engine",
+      details: "Calculated 8.0x price gouging markup (demanded ₹20,000 vs fair ₹2,500).",
+    },
+    {
+      timestamp: new Date().toISOString(),
+      action: "CRITIC_VERIFICATION",
+      latency_ms: 280.0,
+      model_used: "gemma-3-judge",
+      details: "Verified statutory citations: 0% hallucinations under CPA 2019.",
+    },
+  ],
 };
 
 // Generates a mock laptop image with visible hinge defect and scratch for offline canvas
@@ -165,8 +229,8 @@ export function generateLaptopSampleImage(): string {
     <polygon points="120,60 680,60 700,240 100,240" fill="#070a13" stroke="#334155" stroke-width="3" />
     <!-- Display Screen -->
     <polygon points="140,80 660,80 675,225 125,225" fill="#0284c7" fill-opacity="0.1" stroke="#0369a1" stroke-width="1.5" />
-    <text x="400" y="150" fill="#38bdf8" font-size="20" font-family="monospace" text-anchor="middle" font-weight="bold">HP VICTUS 15-fa1310tx</text>
-    <text x="400" y="180" fill="#94a3b8" font-size="12" font-family="sans-serif" text-anchor="middle">Serial: SOA370366199413 • OEM Architecture</text>
+    <text x="400" y="150" fill="#38bdf8" font-size="20" font-family="monospace" text-anchor="middle" font-weight="bold">DEVICE HARDWARE DEFECT INSPECTION</text>
+    <text x="400" y="180" fill="#94a3b8" font-size="12" font-family="sans-serif" text-anchor="middle">Physical Optical Capture • NyayShield AI Forensic Engine</text>
     
     <!-- Left Display Hinge Zone (STRUCTURAL FAILURE) -->
     <rect x="100" y="225" width="60" height="35" rx="4" fill="#1e293b" />
@@ -182,7 +246,7 @@ export function generateLaptopSampleImage(): string {
     <path d="M 580 490 Q 610 500 645 495" stroke="#f59e0b" stroke-width="2.5" fill="none" stroke-linecap="round" />
     <circle cx="612" cy="495" r="4" fill="#f59e0b" fill-opacity="0.4" />
     
-    <!-- Subtle Victus V Logo -->
+    <!-- Subtle Logo -->
     <path d="M 400 360 L 380 320 L 395 320 L 400 335 L 405 320 L 420 320 Z" fill="#38bdf8" fill-opacity="0.6" />
   </svg>`;
   return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;

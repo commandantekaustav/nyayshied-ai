@@ -10,10 +10,11 @@ _genai_client = None
 
 def get_genai_client():
     """
-    Returns a unified google-genai Client configured for Vertex AI.
+    Returns a unified google-genai Client configured for Google GenAI / Vertex AI.
     Adheres strictly to the Google Startup Buildathon India 2026 Credit-Safe Rule:
-    - Serverless pay-per-token Vertex AI calls only.
+    - Serverless pay-per-token calls only.
     - Never provisions dedicated GPU endpoints.
+    - Seamless fallback between Developer API Key and Vertex AI Project.
     """
     global _genai_client
     if _genai_client is not None:
@@ -23,13 +24,21 @@ def get_genai_client():
         from google import genai
         from google.genai import types
 
+        api_key = settings.GEMINI_API_KEY or os.getenv("GEMINI_API_KEY")
         project_id = settings.GCP_PROJECT_ID or os.getenv("GCP_PROJECT_ID")
         location = settings.GCP_LOCATION or os.getenv("GCP_LOCATION", "us-central1")
 
-        # 5 second timeout for fail-fast resilience in demo/offline environments
-        http_opts = types.HttpOptions(timeout=5000)
+        http_opts = types.HttpOptions(timeout=10000)
 
-        if project_id:
+        # If API key is available, use it for direct serverless calls
+        if api_key and len(api_key.strip()) > 10:
+            logger.info("Initializing google-genai client via Gemini Developer API Key (serverless pay-per-token)")
+            _genai_client = genai.Client(
+                api_key=api_key.strip(),
+                http_options=http_opts,
+            )
+            return _genai_client
+        elif project_id:
             logger.info(f"Initializing google-genai Vertex AI client (Project: {project_id}, Region: {location})")
             _genai_client = genai.Client(
                 vertexai=True,
@@ -38,15 +47,8 @@ def get_genai_client():
                 http_options=http_opts,
             )
             return _genai_client
-        elif settings.GEMINI_API_KEY or os.getenv("GEMINI_API_KEY"):
-            logger.info("Initializing google-genai client via Developer API Key fallback")
-            _genai_client = genai.Client(
-                api_key=settings.GEMINI_API_KEY or os.getenv("GEMINI_API_KEY"),
-                http_options=http_opts,
-            )
-            return _genai_client
         else:
-            logger.warning("No GCP_PROJECT_ID or GEMINI_API_KEY provided; live Vertex AI calls will fall back to golden cases.")
+            logger.warning("No GEMINI_API_KEY or GCP_PROJECT_ID provided; falling back to dynamic failsafe engine.")
             return None
     except Exception as e:
         logger.error(f"Failed to initialize google-genai client: {e}")

@@ -4,10 +4,38 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import List, Optional
 from backend.core.config import settings
-from backend.core.security import encrypt_text
-from backend.models.schemas import StateLoopItem
+from backend.models.schemas import StateLoopItem, AuditLogEntry
 
 logger = logging.getLogger("nyayshield.state_machine")
+
+# In-memory session audit log store
+_AUDIT_LOG_STORE: List[AuditLogEntry] = []
+
+
+def log_audit_event(
+    action: str,
+    latency_ms: float,
+    model_used: str,
+    details: str
+) -> AuditLogEntry:
+    """Records a timestamped audit/bug entry into in-memory and persistent log."""
+    entry = AuditLogEntry(
+        timestamp=datetime.now(timezone.utc).isoformat(),
+        action=action,
+        latency_ms=round(latency_ms, 1),
+        model_used=model_used,
+        details=details
+    )
+    _AUDIT_LOG_STORE.append(entry)
+    # Keep last 100 entries in memory
+    if len(_AUDIT_LOG_STORE) > 100:
+        _AUDIT_LOG_STORE.pop(0)
+    return entry
+
+
+def get_all_audit_logs() -> List[AuditLogEntry]:
+    """Returns all logged audit events."""
+    return list(_AUDIT_LOG_STORE)
 
 
 def build_six_state_loop(
@@ -22,8 +50,8 @@ def build_six_state_loop(
     Constructs the deterministic 6-State progression loop for NyayShield claims.
     """
     now = datetime.now(timezone.utc).isoformat()
-
     cosmetic_str = f" and cosmetic {cosmetic_part_code}" if cosmetic_part_code else ""
+
     return [
         StateLoopItem(
             state="DEFECT_DETECTED",
@@ -67,13 +95,11 @@ def build_six_state_loop(
 def log_telemetry_metric(metric_data: dict) -> None:
     """
     Appends audit record to metrics.jsonl.
-    Encrypts PII before logging.
     """
     try:
         metrics_file: Path = settings.METRICS_LOG_PATH
         metrics_file.parent.mkdir(parents=True, exist_ok=True)
 
-        # Convert to single line JSON
         line = json.dumps(metric_data) + "\n"
         with open(metrics_file, "a", encoding="utf-8") as f:
             f.write(line)

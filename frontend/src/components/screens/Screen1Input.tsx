@@ -1,26 +1,60 @@
 import React, { useRef } from 'react';
-import { Camera, Upload, Zap, FileText, IndianRupee, ShieldCheck, AlertCircle, Laptop } from 'lucide-react';
+import { Camera, Upload, Zap, FileText, IndianRupee, Laptop, PenTool, Calendar, Shield, HelpCircle } from 'lucide-react';
+import { AnnotationCanvas } from '../AnnotationCanvas';
 
 interface Screen1InputProps {
   deviceImage: File | null;
   imagePreview: string | null;
   invoiceFile: File | null;
   walkInQuote: number;
+  brandName: string;
+  modelName: string;
+  purchaseDate: string;
+  purchaseType: string;
+  userDescription: string;
+  userAnnotation: [number, number, number, number] | null;
   onDeviceImageChange: (file: File | null, preview: string | null) => void;
   onInvoiceFileChange: (file: File | null) => void;
   onQuoteChange: (quote: number) => void;
+  onBrandChange: (brand: string) => void;
+  onModelChange: (model: string) => void;
+  onPurchaseDateChange: (date: string) => void;
+  onPurchaseTypeChange: (type: string) => void;
+  onUserDescriptionChange: (desc: string) => void;
+  onAnnotationChange: (box: [number, number, number, number] | null) => void;
   onLoadGoldenCase: () => void;
   isLoading: boolean;
 }
+
+const BRANDS = ["HP", "Dell", "Lenovo", "Apple", "Asus", "Acer", "Samsung", "Other"];
+const PROTECTION_PLANS = [
+  "Standard 1-Year Limited Warranty",
+  "2-Year Extended Care Pack",
+  "Credit Card / EMI Purchase Protection",
+  "Consumer Protection Act 2019 Statutory Guarantee",
+  "Out of Warranty / Dispute Refusal"
+];
 
 export const Screen1Input: React.FC<Screen1InputProps> = ({
   deviceImage,
   imagePreview,
   invoiceFile,
   walkInQuote,
+  brandName,
+  modelName,
+  purchaseDate,
+  purchaseType,
+  userDescription,
+  userAnnotation,
   onDeviceImageChange,
   onInvoiceFileChange,
   onQuoteChange,
+  onBrandChange,
+  onModelChange,
+  onPurchaseDateChange,
+  onPurchaseTypeChange,
+  onUserDescriptionChange,
+  onAnnotationChange,
   onLoadGoldenCase,
   isLoading,
 }) => {
@@ -44,9 +78,10 @@ export const Screen1Input: React.FC<Screen1InputProps> = ({
   };
 
   return (
-    <div className="space-y-4 pb-24">
+    <div className="space-y-4 pb-28">
       {/* Top Banner Button: Load Live Case #001 */}
       <button
+        type="button"
         onClick={onLoadGoldenCase}
         disabled={isLoading}
         className="w-full relative overflow-hidden group p-3.5 rounded-2xl bg-gradient-to-r from-amber-500/20 via-emerald-500/15 to-teal-500/20 border border-amber-500/40 hover:border-amber-400 text-left transition-all active:scale-[0.99] shadow-lg shadow-amber-500/5"
@@ -62,11 +97,11 @@ export const Screen1Input: React.FC<Screen1InputProps> = ({
                   Judge Fast-Track
                 </span>
                 <span className="text-[10px] bg-amber-500/20 text-amber-300 font-mono px-1.5 py-0.2 rounded-full border border-amber-500/30">
-                  Offline Ready
+                  Live Case #001
                 </span>
               </div>
               <h3 className="text-sm font-extrabold text-white mt-0.5">
-                ⚡ Load Live Case #001 (Kolkata HP Victus)
+                ⚡ Load Kolkata HP Victus Case
               </h3>
             </div>
           </div>
@@ -79,15 +114,85 @@ export const Screen1Input: React.FC<Screen1InputProps> = ({
         </p>
       </button>
 
-      {/* Main Forensic Camera Upload Card */}
-      <div className="bg-slate-900/90 border border-slate-800 rounded-3xl p-4 shadow-xl">
-        <div className="flex items-center justify-between mb-3">
+      {/* 1. Device Hardware Identification Card */}
+      <div className="bg-slate-900/90 border border-slate-800 rounded-3xl p-4 shadow-xl space-y-3">
+        <div className="flex items-center justify-between">
           <div className="flex items-center space-x-2">
             <Laptop className="w-4 h-4 text-emerald-400" />
-            <h2 className="text-sm font-bold text-slate-100">1. Laptop Chassis / Hinge Photo</h2>
+            <h2 className="text-sm font-bold text-slate-100">1. Device & Hardware Details</h2>
           </div>
           <span className="text-[10px] text-emerald-400 font-mono bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20 font-semibold">
-            Required
+            Configurable
+          </span>
+        </div>
+
+        <div className="grid grid-cols-2 gap-2.5">
+          <div>
+            <label className="block text-[11px] text-slate-400 font-medium mb-1">Brand Name</label>
+            <select
+              value={brandName}
+              onChange={(e) => onBrandChange(e.target.value)}
+              className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-xs font-medium text-white focus:border-emerald-400 outline-none"
+            >
+              {BRANDS.map((b) => (
+                <option key={b} value={b}>{b}</option>
+              ))}
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-[11px] text-slate-400 font-medium mb-1">Model Name / Number</label>
+            <input
+              type="text"
+              value={modelName}
+              onChange={(e) => onModelChange(e.target.value)}
+              placeholder="e.g. Pavilion 15, Victus, Inspiron (or auto-detect)"
+              className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-xs font-medium text-white focus:border-emerald-400 outline-none"
+            />
+          </div>
+        </div>
+
+        <div className="grid grid-cols-2 gap-2.5 pt-1">
+          <div>
+            <label className="block text-[11px] text-slate-400 font-medium mb-1 flex items-center gap-1">
+              <Calendar className="w-3 h-3 text-slate-400" />
+              Purchase Date (Approx)
+            </label>
+            <input
+              type="date"
+              value={purchaseDate}
+              onChange={(e) => onPurchaseDateChange(e.target.value)}
+              className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-xs font-medium text-white focus:border-emerald-400 outline-none"
+            />
+          </div>
+
+          <div>
+            <label className="block text-[11px] text-slate-400 font-medium mb-1 flex items-center gap-1">
+              <Shield className="w-3 h-3 text-slate-400" />
+              Protection Plan / Tier
+            </label>
+            <select
+              value={purchaseType}
+              onChange={(e) => onPurchaseTypeChange(e.target.value)}
+              className="w-full bg-slate-950 border border-slate-700 rounded-xl px-2.5 py-2 text-[11px] font-medium text-white focus:border-emerald-400 outline-none"
+            >
+              {PROTECTION_PLANS.map((p) => (
+                <option key={p} value={p}>{p}</option>
+              ))}
+            </select>
+          </div>
+        </div>
+      </div>
+
+      {/* 2. Photo Upload & Interactive Annotation Reticle */}
+      <div className="bg-slate-900/90 border border-slate-800 rounded-3xl p-4 shadow-xl space-y-3">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center space-x-2">
+            <PenTool className="w-4 h-4 text-purple-400" />
+            <h2 className="text-sm font-bold text-slate-100">2. Damage Photo & Reticle Mark</h2>
+          </div>
+          <span className="text-[10px] text-purple-400 font-mono bg-purple-500/10 px-2 py-0.5 rounded border border-purple-500/20 font-semibold">
+            Interactive
           </span>
         </div>
 
@@ -109,35 +214,29 @@ export const Screen1Input: React.FC<Screen1InputProps> = ({
         />
 
         {imagePreview ? (
-          <div className="relative rounded-2xl overflow-hidden border border-emerald-500/40 bg-slate-950 aspect-[4/3] group shadow-inner">
-            <img
-              src={imagePreview}
-              alt="Device Damage Preview"
-              className="w-full h-full object-cover"
+          <div className="space-y-2">
+            <AnnotationCanvas
+              imageUrl={imagePreview}
+              onAnnotationChange={onAnnotationChange}
+              initialBox={userAnnotation}
             />
-            <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-transparent to-transparent flex items-end p-3 justify-between">
-              <div>
-                <span className="text-[11px] font-mono text-emerald-300 font-semibold flex items-center gap-1">
-                  <ShieldCheck className="w-3.5 h-3.5" />
-                  Forensic Frame Staged
-                </span>
-                <p className="text-[10px] text-slate-400">
-                  {deviceImage?.name || 'Live Case #001 Sample Frame'}
-                </p>
-              </div>
-              <div className="flex space-x-1.5">
-                <button
-                  onClick={() => galleryInputRef.current?.click()}
-                  className="px-2.5 py-1 rounded-lg bg-slate-900/90 hover:bg-slate-800 border border-slate-700 text-[11px] text-slate-200 font-medium transition"
-                >
-                  Change
-                </button>
-              </div>
+            <div className="flex items-center justify-between px-1">
+              <span className="text-[11px] text-slate-400">
+                {deviceImage?.name || 'Live Case Optical Capture'}
+              </span>
+              <button
+                type="button"
+                onClick={() => galleryInputRef.current?.click()}
+                className="text-[11px] text-emerald-400 hover:text-emerald-300 font-medium underline"
+              >
+                Upload different photo
+              </button>
             </div>
           </div>
         ) : (
           <div className="grid grid-cols-2 gap-2.5">
             <button
+              type="button"
               onClick={() => cameraInputRef.current?.click()}
               className="flex flex-col items-center justify-center p-5 rounded-2xl border-2 border-dashed border-emerald-500/30 hover:border-emerald-400 bg-emerald-500/5 hover:bg-emerald-500/10 transition-all group active:scale-95 text-center"
             >
@@ -149,6 +248,7 @@ export const Screen1Input: React.FC<Screen1InputProps> = ({
             </button>
 
             <button
+              type="button"
               onClick={() => galleryInputRef.current?.click()}
               className="flex flex-col items-center justify-center p-5 rounded-2xl border-2 border-dashed border-slate-800 hover:border-slate-700 bg-slate-950/60 hover:bg-slate-950 transition-all group active:scale-95 text-center"
             >
@@ -156,26 +256,36 @@ export const Screen1Input: React.FC<Screen1InputProps> = ({
                 <Upload className="w-6 h-6 stroke-[2]" />
               </div>
               <span className="text-xs font-bold text-slate-100">Upload Photo</span>
-              <span className="text-[10px] text-slate-400 mt-0.5">JPG, PNG from gallery</span>
+              <span className="text-[10px] text-slate-400 mt-0.5">JPG, PNG from device</span>
             </button>
           </div>
         )}
 
-        <p className="text-[11px] text-slate-400 mt-2.5 flex items-start gap-1.5">
-          <AlertCircle className="w-3.5 h-3.5 text-emerald-400 shrink-0 mt-0.5" />
-          <span>Spatial AI isolates manufacturing hinge fatigue from cosmetic surface marks.</span>
-        </p>
+        {/* User Description */}
+        <div>
+          <label className="block text-[11px] text-slate-400 font-medium mb-1 flex items-center gap-1">
+            <HelpCircle className="w-3 h-3 text-slate-400" />
+            Incident Note (What happened?)
+          </label>
+          <textarea
+            value={userDescription}
+            onChange={(e) => onUserDescriptionChange(e.target.value)}
+            rows={2}
+            placeholder="e.g. Left hinge snapped and popped the bezel while opening the lid smoothly on my desk."
+            className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-xs font-medium text-white placeholder-slate-600 focus:border-purple-400 outline-none resize-none"
+          />
+        </div>
       </div>
 
-      {/* Walk-In Quote Input Card */}
+      {/* 3. Walk-In Quote Input Card */}
       <div className="bg-slate-900/90 border border-slate-800 rounded-3xl p-4 shadow-xl">
         <div className="flex items-center justify-between mb-2">
           <div className="flex items-center space-x-2">
             <IndianRupee className="w-4 h-4 text-amber-400" />
-            <h2 className="text-sm font-bold text-slate-100">2. Service Center Quotation (₹)</h2>
+            <h2 className="text-sm font-bold text-slate-100">3. Service Center Quotation (₹)</h2>
           </div>
           <span className="text-[10px] font-mono text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/20 font-semibold">
-            Demanded
+            Price-Gouging Check
           </span>
         </div>
 
@@ -198,7 +308,7 @@ export const Screen1Input: React.FC<Screen1InputProps> = ({
         {/* Quick Quote Pills */}
         <div className="flex items-center space-x-2 mt-2.5">
           <span className="text-[10px] text-slate-400 font-medium">Quick Select:</span>
-          {[12000, 15000, 20000, 25000].map((val) => (
+          {[8000, 15000, 20000, 28000].map((val) => (
             <button
               key={val}
               type="button"
@@ -215,12 +325,12 @@ export const Screen1Input: React.FC<Screen1InputProps> = ({
         </div>
       </div>
 
-      {/* Invoice Upload Card (Optional) */}
+      {/* 4. Invoice Upload Card (Optional) */}
       <div className="bg-slate-900/90 border border-slate-800 rounded-3xl p-4 shadow-xl">
         <div className="flex items-center justify-between mb-2">
           <div className="flex items-center space-x-2">
             <FileText className="w-4 h-4 text-slate-400" />
-            <h2 className="text-sm font-bold text-slate-100">3. Service Job Sheet / Invoice</h2>
+            <h2 className="text-sm font-bold text-slate-100">4. Service Job Sheet / Invoice</h2>
           </div>
           <span className="text-[10px] text-slate-400 font-mono bg-slate-800 px-2 py-0.5 rounded">
             Optional

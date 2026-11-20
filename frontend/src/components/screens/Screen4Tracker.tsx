@@ -42,13 +42,13 @@ export const Screen4Tracker: React.FC<Screen4TrackerProps> = ({ claimData, isApp
 Case Number: ${claimData.case_number}
 Claim ID: ${claimData.claim_id}
 Device Model: ${claimData.triage.device_model}
-Fault Component: HP Part #${claimData.triage.primary_fault_part_code} (B-Cover LCD Bezel)
+Fault Component: Part #${claimData.triage.primary_fault_part_code} (${claimData.triage.primary_fault_part_name})
 Fair OEM Part MSRP: ₹${claimData.pricing.fair_oem_cost_inr.toLocaleString('en-IN')}
 Unauthorized Service Center Quote: ₹${claimData.pricing.walk_in_quote_inr.toLocaleString('en-IN')}
 Gouging Multiplier: ${claimData.pricing.price_gouging_multiplier}x (CPA 2019 Sec 2(47))
 
 SPATIAL FORENSIC EVIDENCE:
-Euclidean Separation: ${claimData.triage.euclidean_separation_mm.toFixed(1)} mm (>140 mm threshold)
+Spatial Evidence: ${claimData.triage.euclidean_separation_mm > 0 ? claimData.triage.euclidean_separation_mm.toFixed(1) + ' mm physical separation from cosmetic marks' : 'Single isolated structural defect (0 secondary impact trauma)'}
 Causation: Hinge overtightening tensile fatigue confirmed. Physical distance disproves drop trauma.
 Warranty Determination: COVERED UNDER MANUFACTURER WARRANTY (100% In-Warranty)
 

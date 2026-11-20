@@ -50,14 +50,48 @@ def draft_legal_package(
     fair_cost = pricing.fair_oem_cost_inr
     separation = triage.euclidean_separation_mm
 
+    if separation > 0:
+        separation_clause_crm = (
+            f"Spatial forensic defect triage confirms the structural failure is {separation:.1f} mm away from any superficial cosmetic wear, "
+            f"conclusively establishing an inherent manufacturing defect (hinge torque tensile fracture) rather than external customer impact."
+        )
+        separation_clause_en = (
+            f"Forensic image triage shows a physical separation of {separation:.1f} mm between the hinge fracture and superficial cosmetic markings, "
+            f"scientifically disproving user-drop impact."
+        )
+        separation_clause_hi = (
+            f"डिजिटल फोरेंसिक विश्लेषण से स्पष्ट है कि कॉस्मेटिक खरोंच और मुख्य हिंज विफलता के बीच {separation:.1f} मिमी की दूरी है, "
+            f"जो साबित करती है कि यह स्पष्ट निर्माण दोष है।"
+        )
+        separation_clause_bn = (
+            f"কারিগরি পরীক্ষায় কব্জা ও উপরিভাগের সামান্য স্ক্র্যাচের দূরত্ব {separation:.1f} মিমি প্রমাণিত, "
+            f"যা কোনো বাহ্যিক আঘাতের সম্ভাবনাকে নাকচ করে উৎপাদনগত ত্রুটি প্রমাণ করে।"
+        )
+    else:
+        separation_clause_crm = (
+            f"Spatial forensic defect triage confirms an isolated structural fracture with zero secondary impact marks or trauma on the chassis, "
+            f"conclusively establishing an inherent manufacturing defect (hinge torque tensile fracture) rather than external customer impact."
+        )
+        separation_clause_en = (
+            f"Forensic image triage confirms an isolated structural fracture with zero secondary impact markings or trauma across the chassis, "
+            f"scientifically disproving user-drop impact."
+        )
+        separation_clause_hi = (
+            f"डिजिटल फोरेंसिक विश्लेषण पुष्टि करता है कि चेसिस पर कोई द्वितीयक प्रभाव या बाहरी चोट के निशान नहीं हैं, "
+            f"जो साबित करता है कि यह स्पष्ट निर्माण दोष है।"
+        )
+        separation_clause_bn = (
+            f"কারিগরি পরীক্ষায় কোনো প্রকার বাহ্যিক আঘাত বা অতিরিক্ত ক্ষতির চিহ্ন পাওয়া যায়নি, "
+            f"যা নিঃসংশয়ে প্রমাণ করে এটি উৎপাদনগত অভ্যন্তরীণ ক্রুটি।"
+        )
+
     crm_demand = (
         f"LEGAL DEMAND & CRM JOB SHEET ESCALATION (48-HOUR NOTICE)\n"
         f"To: Authorized Service Center & Customer Grievance Desk ({device_model})\n"
         f"Reference Job Sheet / Invoice: #{invoice_ref} | Device: {device_model}\n\n"
         f"TAKE NOTICE that your quotation of ₹{quote:,.0f}/- for replacing {part_name} (OEM Part #{part_code}, "
         f"MSRP ₹{fair_cost:,.0f}/-) represents an unjustified {multiplier}x price-gouging markup and wrongful denial of warranty.\n\n"
-        f"Spatial forensic defect triage confirms the structural failure is {separation:.1f} mm away from any superficial cosmetic wear, "
-        f"conclusively establishing an inherent manufacturing defect (hinge torque tensile fracture) rather than external customer impact.\n\n"
+        f"{separation_clause_crm}\n\n"
         f"You are hereby granted 48 HOURS to:\n"
         f"1. Revise Job Sheet #{invoice_ref} to ₹0.00 under standard manufacturer warranty repair.\n"
         f"2. Confirm replacement of genuine OEM Part #{part_code} without forced bundling of unrelated assemblies.\n\n"
@@ -75,8 +109,7 @@ def draft_legal_package(
         f"regarding {device_model} (Job/Invoice #{invoice_ref}).\n\n"
         f"SIRS,\n"
         f"1. DEFICIENCY IN SERVICE [SEC 2(11)]: Your service facility has wrongfully repudiated in-warranty repair by arbitrarily "
-        f"characterizing an internal manufacturing hinge failure as 'accidental customer damage'. Forensic image triage shows an Euclidean "
-        f"separation of {separation:.1f} mm between the hinge fracture and superficial cosmetic markings, scientifically disproving user-drop impact.\n\n"
+        f"characterizing an internal manufacturing hinge failure as 'accidental customer damage'. {separation_clause_en}\n\n"
         f"2. UNFAIR TRADE PRACTICE [SEC 2(47)]: Demanding ₹{quote:,.0f}/- for replacement of {part_name} (OEM Part #{part_code}), "
         f"against genuine OEM catalog price of ₹{fair_cost:,.0f}/-, constitutes predatory {multiplier}x price-gouging and commercial exploitation.\n\n"
         f"3. FINAL PEREMPTORY DEMAND: You have 48 HOURS from receipt of this notice to execute in-warranty repair free of cost. "
@@ -93,8 +126,7 @@ def draft_legal_package(
         f"विषय: {device_model} (चालान संख्या: {invoice_ref}) के संबंध में सेवा में कमी और अनुचित व्यापार व्यवहार का विधिक नोटिस।\n\n"
         f"महोदय,\n"
         f"1. सेवा में गंभीर कमी (धारा 2(11)): अधिकृत सेवा केंद्र द्वारा आंतरिक हिंज विफलता (पुर्जा संख्या: #{part_code}) को दुर्भावनापूर्ण "
-        f"तरीके से 'उपयोगकर्ता द्वारा क्षति' बताकर वारंटी से इनकार किया गया है। डिजिटल फोरेंसिक विश्लेषण से स्पष्ट है कि कॉस्मेटिक खरोंच "
-        f"और मुख्य हिंज विफलता के बीच {separation:.1f} मिमी की दूरी है, जो साबित करती है कि यह स्पष्ट निर्माण दोष है।\n\n"
+        f"तरीके से 'उपयोगकर्ता द्वारा क्षति' बताकर वारंटी से इनकार किया गया है। {separation_clause_hi}\n\n"
         f"2. अनुचित व्यापार व्यवहार (धारा 2(47)): वास्तविक ओईएम पुर्जे (मूल्य ₹{fair_cost:,.0f}/-) के बदले ₹{quote:,.0f}/- की मांग करना ({multiplier} गुना अधिक) "
         f"उपभोक्ता का आर्थिक शोषण और अवैध व्यापार व्यवहार है।\n\n"
         f"3. 48 घंटे का अंतिम अवसर: आपको सूचित किया जाता है कि अगले 48 घंटों में इस मरम्मत को वारंटी के तहत निःशुल्क संपन्न करें, "
@@ -110,8 +142,7 @@ def draft_legal_package(
         f"বিষয়: {device_model} (ইনভয়েস/জব শিট #{invoice_ref}) সংক্রান্ত সেবার ঘাটতি এবং অন্যায্য বাণিজ্যিক আচরণের আইনি নোটিশ।\n\n"
         f"মহাশয়,\n"
         f"১. সেবায় মারাত্মক ঘাটতি (ধারা ২(১১)): সার্ভিস সেন্টার অনৈতিকভাবে ল্যাপটপের অভ্যন্তরীণ মেকানিক্যাল কব্জার ক্রুটিকে গ্রাহকের অসাবধানতাবশত "
-        f"ক্ষতি বলে আখ্যায়িত করে বৈধ ওয়ারেন্টি বাতিল করেছে। কারিগরি পরীক্ষায় কব্জা ও উপরিভাগের সামান্য স্ক্র্যাচের দূরত্ব {separation:.1f} মিমি প্রমাণিত, "
-        f"যা কোনো বাহ্যিক আঘাতের সম্ভাবনাকে নাকচ করে উৎপাদনগত ত্রুটি প্রমাণ করে।\n\n"
+        f"ক্ষতি বলে আখ্যায়িত করে বৈধ ওয়ারেন্টি বাতিল করেছে। {separation_clause_bn}\n\n"
         f"২. অন্যায্য বাণিজ্যিক আচরণ (ধারা ২(৪৭)): আসল OEM যন্ত্রাংশের (পার্ট #{part_code}) সঠিক মূল্য ₹{fair_cost:,.0f}/- হওয়া সত্ত্বেও ₹{quote:,.0f}/- দাবি করা "
         f"({multiplier} গুণ বেশি) সুস্পষ্ট মূল্য-শোষণ ও বেআইনি লাভখোরি।\n\n"
         f"৩. ৪৮ ঘণ্টার চূড়ান্ত নোটিশ: এই নোটিশ প্রাপ্তির ৪৮ ঘণ্টার মধ্যে বিনামূল্যে ওয়ারেন্টির অধীনে মেরামতের নির্দেশ দিন। "
