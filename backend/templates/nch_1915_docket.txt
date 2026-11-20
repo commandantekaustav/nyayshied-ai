@@ -3,7 +3,7 @@
 # Docket No.: NCH-2026-001
 # Date: 2026-11-21
 # Parties:
-#   - Complainant: Ishika Patel (NyayShield AI)
+#   - Complainant: Ishika  (NyayShield AI)
 #   - Respondent: HP Service Center
 # Subject: Unfair Service Charge and Warranty Denial
 #
@@ -21,5 +21,5 @@
 # - Correspondence logs
 #
 # Signature:
-# Ishika Patel
+# Ishika
 # ------------------------------------------------------
