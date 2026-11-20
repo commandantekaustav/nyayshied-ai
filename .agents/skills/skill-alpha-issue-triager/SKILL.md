@@ -30,7 +30,7 @@ When raw alpha feedback arrives (e.g., from manual testers like Ishika):
 
 ## 2. Team Branching & Merging Standards
 
-For teams working across distributed feature branches (e.g., `main` lead, `b1` feature branch, `alpha_tester_feedbacks`):
+For teams working across distributed feature branches (e.g., `main` lead by Kaustav, `b1` feature branch by Anwesha, `Ishika-Module` testing branch by Ishika):
 1. **Clean Separation of Concerns:**
    - Core API & Shared Types (`types/claim.ts`, `schemas.py`) must remain backwards compatible.
    - Feature branches (like `b1`) should rebase or merge against `main` cleanly without touching generated files (`dist/`).

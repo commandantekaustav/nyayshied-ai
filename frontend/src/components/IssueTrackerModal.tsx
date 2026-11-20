@@ -117,7 +117,7 @@ Status: ${resolvedCount}/${issues.length} Resolved (100%)
 
 ## Team Branches & Roles
 - Kaustav: Lead Fullstack & AI Architecture (branch: main)
-- Ishika: Alpha QA & Manual Hardware Verification (alpha_tester_feedbacks/)
+- Ishika: Alpha QA & Manual Hardware Verification (branch: Ishika-Module)
 - Anwesha: Feature Developer (branch: b1)
 
 ## Issue Matrix
@@ -186,8 +186,8 @@ ${issues.map(i => `- [${i.resolved ? 'x' : ' '}] **${i.id}** (${i.priority}) ${i
             <Laptop className="w-4 h-4 text-purple-400 shrink-0" />
             <div className="truncate">
               <span className="font-bold text-slate-200">Ishika (Alpha QA)</span>
-              <p className="text-[10px] text-purple-400/90 font-mono">
-                Manual Hardware Tests & Logs
+              <p className="text-[10px] text-purple-400/90 font-mono flex items-center gap-1">
+                <GitBranch className="w-2.5 h-2.5" /> branch: Ishika-Module
               </p>
             </div>
           </div>
