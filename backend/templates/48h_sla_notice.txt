@@ -1,6 +1,6 @@
 # 48‑Hour SLA Notice Template (filled)
 To: HP Service Center
-From: NyayShield AI (Ishika Patel)
+From: NyayShield AI (Ishika)
 Date: 2026-11-21
 Reference: Claim ID NYAY-2026-HP-001
 Subject: 48‑Hour Service Level Agreement (SLA) Notice
