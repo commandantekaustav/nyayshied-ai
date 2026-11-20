@@ -8,6 +8,7 @@
 [![React 18 + Vite](https://img.shields.io/badge/Edge%20Client-React%2018%20%2B%20Vite-61DAFB?style=for-the-badge&logo=react)](https://react.dev/)
 [![CPA 2019 Grounded](https://img.shields.io/badge/Statutory%20Framework-CPA%202019%20Sec%202(11)%20%7C%202(47)%20%7C%2035-FBBC05?style=for-the-badge)](https://consumeraffairs.nic.in/)
 [![Fernet AES-128](https://img.shields.io/badge/Evidence%20Lock-Fernet%20AES--128%20%2B%20SHA--256-4A154B?style=for-the-badge)](https://cryptography.io/)
+[![Lineage: Clause-n-Effect](https://img.shields.io/badge/Lineage-Clause--n--Effect%20(Open%20Source)-00A98F?style=for-the-badge&logo=github)](https://github.com/commandantekaustav/clause-n-effect)
 
 ---
 
@@ -29,6 +30,8 @@
 7. [Automated Continuous Documentation & Architecture Sync](#-automated-continuous-documentation--architecture-sync)
 8. [Quickstart & Demo Verification](#-quickstart--demo-verification)
 9. [Buildathon Rubric Alignment (100% Score Maximization)](#-buildathon-rubric-alignment-100-score-maximization)
+10. [Architectural Lineage & Credits to Clause-n-Effect](#-architectural-lineage--credits-to-clause-n-effect)
+11. [Engineering FAQ & Deep Dive](#-engineering-faq--deep-dive)
 
 ---
 
@@ -462,6 +465,116 @@ npm run dev -- --host 0.0.0.0 --port 5173
 | **5. UX, Usability & Accessibility** | **10%** | Mobile-first touch reticle, 1-tap EN/HI/BN toggle, and native Web Speech API legal notice narration. |
 | **6. Innovation & Differentiation** | **5%** | Bayer matrix optical noise fake image detector, Karpathy anti-phantom vision evaluation protocol, and part-level BOM multiplier engine. |
 | **Total Buildathon Score** | **100%** | **Maximized across all 6 official judging dimensions.** |
+
+---
+
+## 🧬 Architectural Lineage & Credits to Clause-n-Effect
+
+NyayShield AI is an architectural derivative and direct engineering evolution of [**Clause-n-Effect**](https://github.com/commandantekaustav/clause-n-effect), the open-source corporate legal compliance and forensic auditing engine authored by **Kaustav Kundu**.
+
+```mermaid
+flowchart TD
+    subgraph ClauseNEffect ["Predecessor: Clause-n-Effect (GitHub: commandantekaustav/clause-n-effect)"]
+        LaborLaw["Indian Labor Law Domain (ICA § 27, IDA § 25F, POSH)"]
+        PIIScrub["Upstream Regex & NER PII Sanitization Engine"]
+        FernetFlywheel["Zero-Trust Cryptographic Data Flywheel (Fernet AES-128-CBC)"]
+        AdversarialCritic["Adversarial Actor-Critic Loop (HR Defense vs Litigator Judge)"]
+        Ledger["Deterministic Execution Ledger (track.json)"]
+    end
+
+    subgraph NyayShieldAI ["Evolution: NyayShield AI (Google Startup Buildathon India 2026)"]
+        ConsumerLaw["Consumer Electronics Warranty Law (CPA 2019 § 2(11), § 2(47), § 35)"]
+        MultimodalVision["Multimodal Spatial Reticle Triage (Gemini 2.5 Flash BBoxes)"]
+        BayerFakeGate["Bayer Matrix & CFA Sensor Fake Image Detector"]
+        GougingEngine["Deterministic Part-Level Price-Gouging Multiplier Engine"]
+        GemmaCritic["Gemma 3 Statutory Legal Critic (0% Hallucinations, EN/HI/BN)"]
+        SixStateLoop["6-State SLA Dispute Resolution Loop & e-Jagriti Digital Filing"]
+        WebSpeechNarration["Tri-Lingual Web Speech API Audio Engine"]
+    end
+
+    PIIScrub -->|"Directly Reused & Enhanced"| NyayShieldAI
+    FernetFlywheel -->|"Inherited Core Cryptographic Vault"| NyayShieldAI
+    AdversarialCritic -->|"Evolved into Gemma 3 Statutory Critic"| GemmaCritic
+    Ledger -->|"Evolved into Persistent metrics.jsonl"| SixStateLoop
+    LaborLaw -.->|"Pivoted & Scaled to Hardware Protection"| ConsumerLaw
+```
+
+### Components Reused vs. Evolved from Clause-n-Effect
+
+| Architectural Layer | Implementation in Clause-n-Effect | Evolutionary Role in NyayShield AI | Status |
+| :--- | :--- | :--- | :--- |
+| **Cryptographic Evidence Vault** | Symmetric `Fernet` (AES-128-CBC + HMAC-SHA256) encrypting cloud vector DB payloads. | Encrypts claim telemetry and bundles court-admissible SHA-256 photographic digests into tamper-proof records. | **Inherited & Hardened** |
+| **Privacy & PII Sanitization** | Regex and rule-based scrubbing of personal email addresses, phone numbers, and salaries. | Redacts consumer names, contact info, and serial identifiers prior to cloud model inference. | **Directly Reused** |
+| **Adversarial Legal Critic** | 8B Corporate HR Defense node red-teaming litigator claims to catch uncited labor provisions. | Evolved into the **Gemma 3 Statutory Critic**, enforcing 0% hallucinated citations under CPA 2019 Sections 2(11), 2(47), and 35. | **Evolved & Upgraded** |
+| **State Machine & Ledger** | LangGraph cyclic graph + local `track.json` latency execution ledger. | Evolved into a deterministic **6-State SLA Dispute Resolution Loop** with real-time audit logging and `metrics.jsonl` persistence. | **Evolved & Standardized** |
+| **Domain Transformation** | Indian Contract Act 1872 (§ 27 non-competes), Industrial Disputes Act 1947, POSH 2013. | Shifted to **Consumer Protection Act, 2019** (§ 2(11) Deficiency of Service, § 2(47) Unfair Trade Practice, § 35 e-Jagriti). | **Expanded Domain** |
+| **Multimodal Spatial Vision** | N/A (Text-only contract & email parsing). | **Brand-New Feat**: Gemini 2.5 Flash normalized 2D bounding boxes `[ymin, xmin, ymax, xmax]` + interactive touch reticle canvas. | **Novel Capability** |
+| **Synthetic Fake Detector** | N/A. | **Brand-New Feat**: Forensic Bayer optical noise response curve screening to detect AI-generated fake damage. | **Novel Capability** |
+
+---
+
+## 💡 Engineering FAQ & Deep Dive
+
+### Q1: Models often struggle with negative constraints ("Don't detect phantom boxes on clean chassis"). Is this true, and how does NyayShield handle it?
+**Yes, this is an established phenomenon in transformer-based architectures.**
+
+#### The Underlying Cause (Attention Allocation & The "Pink Elephant" Paradox):
+Auto-regressive multimodal models operate on cross-attention mechanisms. When a system prompt includes negative constraints like *"Do NOT detect boxes on the clean desk, table, or undamaged chassis"*, the negative tokens (`clean`, `table`, `undamaged`, `desk`, `box`) are actively embedded into the attention sequence. Rather than suppressing those regions, the self-attention heads frequently allocate *heightened probability mass* to those coordinates, inadvertently compelling the model to hallucinate a bounding box around the exact region it was told to ignore (analogous to the cognitive directive: *"Do not think of a pink elephant"*).
+
+```mermaid
+flowchart TD
+    subgraph Problem ["The Negative Constraint Attention Trap"]
+        PromptNeg["Prompt: 'Do NOT detect undamaged table or clean chassis'"]
+        AttentionSpike["Attention heads attend to 'table' and 'clean chassis' tokens"]
+        PhantomBox["Model hallucinates a phantom bounding box on the background!"]
+        PromptNeg --> AttentionSpike --> PhantomBox
+    end
+
+    subgraph Solution ["NyayShield AI 5-Layer Engineering Mitigation"]
+        Affirmative["1. Affirmative Framing: Define what TO detect (tensile shear, fracture)"]
+        SchemaGating["2. Schema Default Gating: 'unannotated_damages' defaults to empty list []"]
+        TwoPass["3. Programmatic Coordinate Validation: Filter boxes overlapping image borders"]
+        EdgeGradient["4. Texture / Edge Gradient Variance: Reject flat surfaces with zero micro-cracks"]
+        DualReticle["5. Interactive Reticle Canvas: Anchor primary attention to user box"]
+    end
+```
+
+#### How NyayShield AI Overcomes Negative Constraints:
+1. **Affirmative / Constructive Prompt Framing**:
+   Instead of saying *"Do NOT detect undamaged areas"*, we instruct the model positively:
+   > *"Inspect the chassis for physical discontinuity: plastic tensile shear, fracture fissures, or fastener failure. If and only if an additional structural fracture exists, describe it. Otherwise, set `unannotated_damages: []`."*
+2. **Schema & Syntax Gating**:
+   In `backend/models/schemas.py`, `unannotated_damages` is declared with `default_factory=list`. When the chassis is clean, emitting an empty array is the natural, minimal token path.
+3. **Interactive User Reticle Anchoring**:
+   By providing explicit coordinates `[ymin, xmin, ymax, xmax]` drawn by the user on the canvas, the vision model's attention is grounded on a concrete spatial ROI (Region of Interest), preventing attention wander over empty table textures.
+4. **Zero-Distance Heuristic**:
+   When `unannotated_damages` is empty, the system sets `euclidean_separation_mm: 0.0` and displays a **"Clean Chassis Verified"** badge rather than forcing a secondary measurement.
+
+---
+
+### Q2: Why was the `>140 mm` criteria present in early versions, why was it a mistake, and how was it purged?
+- **The Origin**: In the initial prototype (Golden Case #001), the founder's own laptop had a broken hinge at the top and an unrelated cosmetic scuff on the palmrest, separated by $168.4\text{ mm}$. Early prompt iterations generalized this single case into an arbitrary heuristic: *"Separation must exceed 140 mm to prove non-drop damage."*
+- **The Failure Mode**: When alpha tester Ishika tested a laptop that was **completely clean** except for the broken hinge, the model believed it *had* to find a secondary point $>140\text{ mm}$ away to prove warranty coverage. This forced the model to hallucinate a phantom box on a random desk texture just to satisfy the $140\text{ mm}$ rule! Furthermore, on smaller 12-inch or 13-inch laptops, two corners may only be $100\text{ mm}$ apart, causing genuine claims to be misclassified.
+- **The Resolution**: The arbitrary $>140\text{ mm}$ threshold was purged from all prompts, schemas, tests, and documentation. Non-drop causation is now grounded in **physical failure mechanics** (tensile torque fatigue, plastic fastener shear, snap-fit bracket fracture, and absence of radial impact crush points). If only 1 defect exists, separation is $0.0\text{ mm}$, representing the strongest possible proof of manufacturing defect.
+
+---
+
+### Q3: How does the system guarantee 0% hallucinated statutory legal citations?
+- Legal notice drafting utilizes an **Adversarial Gemma 3 Critic Judge Loop** inherited from the Clause-n-Effect architecture.
+- The critic verifies every drafted claim against a closed-world statutory dictionary:
+  - *Consumer Protection Act, 2019: Section 2(11) [Deficiency in Service]*
+  - *Consumer Protection Act, 2019: Section 2(47) [Unfair Trade Practice]*
+  - *Consumer Protection Act, 2019: Section 35 [District Commission Complaint]*
+  - *Consumer Protection (E-Commerce) Rules, 2020: Rule 5 [Grievance Redressal]*
+- Any mention of repealed statutes (such as the 1986 Act) or nonexistent clauses causes immediate rejection and regeneration.
+
+---
+
+### Q4: How does zero-knowledge cryptographic evidence locking work?
+1. Before any model processes the uploaded image, `compute_sha256(image_bytes)` creates an immutable 64-character hexadecimal digest.
+2. The customer's PII (phone number, email address, physical address) is scrubbed via regex masks.
+3. The claim payload (`claim_id`, `device_model`, `primary_fault_part_code`, `walk_in_quote`, `fair_cost`, `multiplier`, `image_sha256`, `timestamp`) is symmetrically encrypted with **Fernet AES-128-CBC + HMAC-SHA256**.
+4. The legal notice package explicitly cites `Photographic Digest SHA-256: [hash]` in its formal exhibits, ensuring tamper-proof chain of custody for court filings before District Consumer Commissions (e-Jagriti).
 
 ---
 

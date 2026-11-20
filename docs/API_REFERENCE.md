@@ -1,6 +1,6 @@
 # NyayShield AI — REST API Reference & Data Contracts
 **Google Startup Buildathon India 2026**
-*Last Synchronized: 2026-11-20 21:56:33 UTC*
+*Last Synchronized: 2026-11-20 23:11:06 UTC*
 
 ---
 
