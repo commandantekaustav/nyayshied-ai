@@ -214,15 +214,20 @@ async def analyze_claim(
             purchase_type=purchase_type,
         )
         triage_latency_ms = (time.time() - triage_start) * 1000
+        triage_action = "SPATIAL_TRIAGE_FALLBACK" if triage_result.is_fallback else "SPATIAL_TRIAGE_COMPLETED"
         log_audit_event(
-            action="SPATIAL_TRIAGE_COMPLETED",
+            action=triage_action,
             latency_ms=triage_latency_ms,
-            model_used=settings.VERTEX_MODEL_ID,
+            model_used="tier2-benchmark-engine" if triage_result.is_fallback else settings.VERTEX_MODEL_ID,
             details=f"Localized {len(triage_result.bounding_boxes)} defect regions. Verified: {triage_result.user_annotation_verification.component_name if triage_result.user_annotation_verification else 'Hardware Defect'}. Authenticity: {triage_result.ai_authenticity.authenticity_verdict} (AI prob: {triage_result.ai_authenticity.ai_generated_probability:.2f})."
         )
 
-        # Determine fair OEM cost
-        fair_oem_cost = 2500.0  # Standard fair cost for display bezel clip assembly
+        # Determine dynamic fair OEM cost from detected part (fallback to ₹2,500)
+        fair_oem_cost = (
+            triage_result.estimated_fair_oem_cost_inr
+            if getattr(triage_result, "estimated_fair_oem_cost_inr", 0.0) > 0
+            else 2500.0
+        )
 
         # STEP 2: Price-Gouging Rule Engine
         pricing_start = time.time()
@@ -238,12 +243,16 @@ async def analyze_claim(
             details=f"Quote ₹{walk_in_quote_inr:,.0f} vs Fair OEM ₹{fair_oem_cost:,.0f} -> Multiplier: {pricing_audit.price_gouging_multiplier}x ({pricing_audit.gouging_severity})."
         )
 
+        # Generate unique Claim ID prior to Step 3 so invoice/job-sheet reference is dynamic
+        claim_id = f"NYAY-{datetime.now(timezone.utc).strftime('%Y%m%d')}-{uuid.uuid4().hex[:6].upper()}"
+        dynamic_invoice_ref = f"INV-{claim_id[-6:]}"
+
         # STEP 3: Grounded Legal Drafter + Adversarial Gemma 3 Judge
         legal_start = time.time()
         legal_package = draft_legal_package(
             triage=triage_result,
             pricing=pricing_audit,
-            invoice_no="SOA370366199413",
+            invoice_no=dynamic_invoice_ref,
             device_image_sha256=device_image_sha256,
         )
         legal_latency_ms = (time.time() - legal_start) * 1000
@@ -256,7 +265,6 @@ async def analyze_claim(
 
         # STEP 4: Deterministic 6-State Loop & Evidence Lock
         crypto_start = time.time()
-        claim_id = f"NYAY-{datetime.now(timezone.utc).strftime('%Y%m%d')}-{uuid.uuid4().hex[:6].upper()}"
         state_loop = build_six_state_loop(
             device_image_sha256=device_image_sha256,
             walk_in_quote_inr=walk_in_quote_inr,

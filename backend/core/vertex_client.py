@@ -28,21 +28,30 @@ def get_genai_client():
         project_id = settings.GCP_PROJECT_ID or os.getenv("GCP_PROJECT_ID")
         location = settings.GCP_LOCATION or os.getenv("GCP_LOCATION", "us-central1")
 
-        http_opts = types.HttpOptions(timeout=10000)
+        http_opts = types.HttpOptions(timeout=35000)
 
-        # If API key is available, use it for direct serverless calls
-        if api_key and len(api_key.strip()) > 10:
-            logger.info("Initializing google-genai client via Gemini Developer API Key (serverless pay-per-token)")
+        # Route via Vertex AI when USE_VERTEXAI=true and GCP_PROJECT_ID is configured
+        if settings.USE_VERTEXAI and project_id and project_id.strip():
+            logger.info(f"Initializing google-genai Vertex AI client (Project: {project_id}, Region: {location})")
+            _genai_client = genai.Client(
+                vertexai=True,
+                project=project_id.strip(),
+                location=location,
+                http_options=http_opts,
+            )
+            return _genai_client
+        elif api_key and len(api_key.strip()) > 10:
+            logger.info("Initializing google-genai client via Gemini API Key (serverless pay-per-token)")
             _genai_client = genai.Client(
                 api_key=api_key.strip(),
                 http_options=http_opts,
             )
             return _genai_client
-        elif project_id:
+        elif project_id and project_id.strip():
             logger.info(f"Initializing google-genai Vertex AI client (Project: {project_id}, Region: {location})")
             _genai_client = genai.Client(
                 vertexai=True,
-                project=project_id,
+                project=project_id.strip(),
                 location=location,
                 http_options=http_opts,
             )

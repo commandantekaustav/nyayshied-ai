@@ -170,7 +170,9 @@ def draft_legal_package(
 
     if client is not None:
         try:
-            critic_model = settings.CRITIC_MODEL_ID or "gemma-3"
+            from backend.services.triage import safe_parse_json
+
+            critic_model = settings.CRITIC_MODEL_ID or "gemini-3.5-flash-lite"
             critic_prompt = f"""
             Analyze the following legal notice draft:
             Citations: {VALID_INDIAN_CONSUMER_STATUTES}
@@ -184,15 +186,15 @@ def draft_legal_package(
                 model=critic_model,
                 contents=critic_prompt,
                 config=types.GenerateContentConfig(
-                    temperature=0.0,
+                    temperature=0.1,
                     system_instruction=CRITIC_SYSTEM_PROMPT,
                     response_mime_type="application/json",
                 ),
             )
             if response.text:
-                parsed = json.loads(response.text)
-                gemma3_verified = parsed.get("verified", True)
-                critic_notes = f"Gemma 3 Judge: {parsed.get('critic_assessment', 'Verified 0% hallucinations')}"
+                parsed = safe_parse_json(response.text)
+                gemma3_verified = bool(parsed.get("verified", True))
+                critic_notes = f"Gemma 3 Judge ({critic_model}): {parsed.get('critic_assessment', 'Verified 0% hallucinations')}"
         except Exception as e:
             logger.info(f"Adversarial critic dynamic check bypassed ({e}); verified using local statutory rule dictionary.")
             gemma3_verified = True

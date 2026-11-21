@@ -5,3 +5,7 @@ __pycache__/
 _ref_clause_n_effect/
 frontend/dist/
 *.log
+
+
+backend/.env
+_ref_detection/
