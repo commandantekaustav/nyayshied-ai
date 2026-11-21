@@ -1,0 +1,13 @@
+.git
+.gitignore
+.agents
+_ref_detection
+docs
+frontend
+backend/.env
+backend/.venv
+backend/__pycache__
+backend/tests
+**/__pycache__
+*.pyc
+*.log
