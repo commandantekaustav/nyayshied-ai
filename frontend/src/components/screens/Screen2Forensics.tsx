@@ -342,7 +342,7 @@ export const Screen2Forensics: React.FC<Screen2ForensicsProps> = ({ claimData, i
         <div className="relative rounded-2xl overflow-hidden border border-slate-800 bg-slate-950 shadow-inner flex items-center justify-center">
           <canvas
             ref={canvasRef}
-            className="w-full h-auto max-h-[420px] object-contain block mx-auto"
+            className="max-w-full w-auto h-auto max-h-[420px] object-contain block mx-auto"
           />
         </div>
 

@@ -17,7 +17,7 @@ This skill encodes the official **Google Startup Buildathon India 2026** evaluat
 | :--- | :---: | :--- | :--- |
 | **1. Functional Product & Implementation** | **30%** | End-to-end working flow, error handling, live inference, no mocks in production path. | Real-time multimodal photo upload, interactive reticle marking, genuine defect classification, dynamic gouging calculation, and downloadable statutory notice package. Deterministic Golden Case fallback for offline resilience. |
 | **2. Technical Architecture & Engineering Quality** | **20%** | Code modularity, clean decoupling, security, audit logging, and latency telemetry. | Clean FastAPI backend + Vite PWA frontend; Fernet AES-128 PII encryption; cryptographic SHA-256 frame hashing; non-blocking background task execution; zero lint/type errors (`tsc` clean). |
-| **3. Google AI Integration & Implementation Depth** | **20%** | Meaningful, multi-model Google AI utilization (not a toy wrapper). | **Gemini 3.5-Flash** for multimodal spatial vision and zero-shot defect verification; **Gemma 3 Critic / Legal Judge** for adversarial citation verification (0% statutory hallucinations); Google GenAI unified SDK (`google-genai`). |
+| **3. Google AI Integration & Implementation Depth** | **20%** | Meaningful, multi-model Google AI utilization (not a toy wrapper). | **Gemini 3.8 Flash** (`gemini-3.8-flash` cascade) for multimodal spatial vision and zero-shot defect verification; **Gemma 3 Critic / Legal Judge** (`gemini-3.5-flash-lite`) for adversarial citation verification (0% statutory hallucinations); Google GenAI unified SDK (`google-genai`). |
 | **4. Problem-Solution Alignment** | **15%** | Relevance to real Indian consumer and B2B pain points. | Direct statutory grounding in Consumer Protection Act 2019 Section 2(11) [Deficiency in Service], Section 2(47) [Unfair Trade Practice], and Section 35 [e-Jagriti pre-litigation filing]. Solves OEM warranty repudiation. |
 | **5. UX, Usability & Accessibility** | **10%** | Thumb-zone mobile layout, tri-lingual localization (EN/HI/BN), audio/accessibility, visual canvas feedback. | Mobile-first responsive container (`max-w-[430px]`), interactive touch canvas reticle, 1-tap language toggling (English, Hindi, Bengali), Web Speech API audio notice narration, high-contrast dark theme. |
 | **6. Innovation & Differentiation** | **5%** | Novelty, unfair technical advantage, fraud prevention. | Dual-zone anti-phantom defect isolation (Karpathy protocol); AI synthetic image detector (optical Bayer noise audit); real-time price gouging multiplier engine (e.g. 8.0x fair OEM BOM). |
@@ -35,7 +35,7 @@ This skill encodes the official **Google Startup Buildathon India 2026** evaluat
 - **Max-Score Polish:** Real-time latency tracking and change audit log sheet exposed in the collapsible Judge Drawer.
 
 ### Pillar 3: Google AI Integration & Depth (20%)
-- **Current State:** 100% complete. Gemini 3.5-Flash multimodal spatial defect triage + Gemma 3 Adversarial Critic.
+- **Current State:** 100% complete. Gemini 3.8 Flash (`gemini-3.8-flash`) multimodal spatial defect triage + Gemma 3 Adversarial Critic (`gemini-3.5-flash-lite`).
 - **Max-Score Polish:** Highlight the exact dual-model orchestration: Gemini triages the physics, Gemma 3 verifies the law.
 
 ### Pillar 4: Problem-Solution Alignment (15%)

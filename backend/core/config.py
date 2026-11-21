@@ -62,7 +62,7 @@ class Settings:
         if origin.strip()
     ]
 
-    # Models (Verified operational in this environment: gemini-3.8-flash & gemini-3.5-flash-lite)
+    # Models (Verified active Vertex AI / Gemini cascade: gemini-3.8-flash -> gemini-3.5-flash -> gemini-3.5-flash-lite)
     VERTEX_MODEL_ID: str = os.getenv("VERTEX_MODEL_ID", "gemini-3.8-flash").strip()
     CRITIC_MODEL_ID: str = os.getenv("CRITIC_MODEL_ID", "gemini-3.5-flash-lite").strip()
     VERTEX_CASCADE_MODELS: List[str] = [

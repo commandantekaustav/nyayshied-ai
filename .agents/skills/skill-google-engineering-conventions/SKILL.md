@@ -56,7 +56,7 @@ git push origin --delete <old-name>
 
 Format: `<type>(<scope>): <concise imperative description>`
 
-- `feat(vision): integrate gemini 3.5 multimodal device identifier`
+- `feat(vision): integrate gemini-3.8-flash multimodal device identifier`
 - `fix(triage): eliminate phantom bounding boxes on clean chassis`
 - `docs(tracker): update alpha feedback resolution table`
 - `refactor(api): clean up unused form parameters`

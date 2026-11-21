@@ -28,15 +28,6 @@ When raw alpha feedback arrives (e.g., from manual testers like Ishika):
 
 ---
 
-## 2. Team Branching & Merging Standards
+## 2. Team Branching, Commits & Pre-Push Verification
 
-For teams working across distributed feature branches (e.g., `main` lead by Kaustav, `b1` feature branch by Anwesha, `Ishika-Module` testing branch by Ishika):
-1. **Clean Separation of Concerns:**
-   - Core API & Shared Types (`types/claim.ts`, `schemas.py`) must remain backwards compatible.
-   - Feature branches (like `b1`) should rebase or merge against `main` cleanly without touching generated files (`dist/`).
-2. **Git Commit Standards:**
-   - Use Conventional Commits: `fix(vision): ...`, `feat(tracker): ...`, `docs(feedback): ...`.
-   - Never commit secrets, `.env`, or local venvs.
-3. **Verification Before Push:**
-   - Run `npm run build` (or `tsc`) to guarantee 0 compile errors.
-   - Verify server reload with active routes (`/api/health`, `/api/analyze-claim`, `/api/audit-logs`).
+For all branch naming (`feat/`, `fix/`, `test/`), Conventional Commits, secret hygiene, and pre-push verification (`npm --prefix frontend run build`, `/api/health`), follow **`skill-google-engineering-conventions`** (`.agents/skills/skill-google-engineering-conventions/SKILL.md`) as the single source of truth.

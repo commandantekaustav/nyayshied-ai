@@ -1,13 +1,10 @@
-import io
 import json
 import logging
-import math
 import re
 import time
-from typing import Optional, List, Literal, Tuple
+from typing import Optional, List
 
 from google.genai import types
-from PIL import Image, ImageDraw, ImageOps
 from pydantic import BaseModel, Field
 
 from backend.core.config import settings
@@ -20,6 +17,13 @@ from backend.models.schemas import (
     UnannotatedDamage,
     WarrantyClauseAnalysis,
 )
+from backend.services.vision.image_prep import extract_dual_views
+from backend.services.vision.geometry_guard import (
+    normalize_box,
+    constrain_to_user_reticle,
+    map_classification,
+    compute_separation_mm,
+)
 
 logger = logging.getLogger("nyayshield.triage")
 
@@ -28,75 +32,92 @@ SYSTEM_TRIAGE_INSTRUCTION = """
 You are NyayShield AI, an expert consumer protection hardware forensic inspector.
 Perform objective optical defect detection, classification, and spatial localization on consumer electronics.
 
-STRICT VISUAL CLASSIFICATION RUBRIC:
-- "Manufacturing Defect": Structural separation along factory seams, bezel snap-fit clip pop-out, hinge mount torque seizure/fracture at screw bosses WITHOUT surrounding crush or dent marks, internal LCD delamination/vertical display lines without point impact.
-- "Physical/Accidental Damage": Radial spiderweb glass shattering from a point of impact, crushed/deformed metal or plastic corners from a drop, deep gouge with material displacement, bend in frame, or liquid spill corrosion/staining.
-- "Cosmetic Wear": Superficial exterior surface paint scratches, scuffs, keycap shine, minor lid marks that do not impair structural or electronic operation.
+CONTRASTIVE VISUAL EXCLUSION RUBRIC (Evaluate physical evidence BEFORE assigning a label):
+- "Manufacturing Defect" (EXCLUDE if radial shatter, crushed corner, or blunt dent is present): Clean factory-seam or bezel snap-fit separation, internal hinge brass-insert/screw-boss torque shear, or vertical LCD delamination lines with intact surrounding outer paint/anodized finish and NO external impact point.
+- "Physical/Accidental Damage" (EXCLUDE clean seam/hinge pull-out with no exterior trauma): Radial spiderweb glass fracture radiating from a point impact, crushed/deformed corner or bent frame, deep material-displacing gouge, or liquid-spill corrosion/staining (`impact_point_present: true`).
+- "Cosmetic Wear" (EXCLUDE any structural crack, hinge gap, or functional impairment): Superficial exterior paint scratches, scuffs, keycap shine, or minor lid marks leaving the underlying chassis geometry intact.
 
 CRITICAL ENGINEERING RULES:
 1. Identify the true device brand and series visible on the chassis (e.g. HP Pavilion vs HP Victus, Dell Inspiron, Lenovo ThinkPad, MacBook). Never force a wrong model name.
-2. Check first whether a real consumer electronic device or product is present (`isDevice`). If the photo shows only non-product scenery, humans, documents, or blank space, set `isDevice: false`.
+2. Check first whether a real consumer electronic device or product is present (`is_device`). If the photo shows only non-product scenery, humans, documents, or blank space, set `is_device: false`.
 3. Provide TIGHT normalized bounding boxes [ymin, xmin, ymax, xmax] on a 0 to 1000 scale surrounding the genuine visible defect pixels. Do NOT fabricate boxes on clean surfaces or empty desk areas.
-4. Estimate a realistic authorized Indian OEM replacement part cost in INR (`fairOemCostINR`) appropriate for the specific detected component (e.g., laptop hinge/bezel ~₹2,200-₹3,500, laptop LCD panel ~₹5,500-₹9,500, smartphone OLED ~₹4,500-₹12,000, keyboard deck ~₹2,500-₹4,500).
-5. Evaluate image authenticity for signs of generative AI synthesis (`isAuthenticPhoto`, `aiGeneratedProbability`).
+4. Estimate a realistic authorized Indian OEM replacement part cost in INR (`fair_oem_cost_inr`) appropriate for the specific detected component (e.g., laptop hinge/bezel ~₹2,200-₹3,500, laptop LCD panel ~₹5,500-₹9,500, smartphone OLED ~₹4,500-₹12,000, keyboard deck ~₹2,500-₹4,500).
+5. Evaluate image authenticity for signs of generative AI synthesis (`is_authentic_photo`, `ai_generated_probability`).
 """
 
 
 # ---------------------------------------------------------------------------
-# Internal Gemini Structured Output Schemas (string enums for SDK stability)
+# Internal Gemini Structured Output Schemas (Physics-First Field Ordering)
 # ---------------------------------------------------------------------------
 
 class _DetectedDefect(BaseModel):
     part: str = Field(..., description="Specific hardware component name (e.g. Left Display Hinge, Palmrest Deck, LCD Panel)")
-    oemPartCode: str = Field("OEM-PART-01", description="Likely OEM spare part identifier or category code")
+    oem_part_code: str = Field("OEM-PART-01", description="Likely OEM spare part identifier or category code")
+    # Stage 1: Raw Physical Evidence (Evaluated BEFORE Classification)
+    material_type: str = Field(..., description="Observed substrate material (e.g. polycarbonate ABS, brushed aluminum, glass)")
+    surface_texture: str = Field(..., description="Macro surface condition (e.g. stress-whitened plastic, intact anodized finish, abraded scuff)")
+    stress_indicators: str = Field(..., description="Mechanical failure cues (e.g. internal brass-insert shear, hinge torque fatigue, clean delamination vs blunt crush)")
+    impact_point_present: bool = Field(..., description="True ONLY if radial spider-cracks, crushed corner, or blunt-force indentation are visible")
+    # Stage 2: Tight Coordinates & Final Verdict (Evaluated LAST)
+    defect_box: List[int] = Field(..., description="Tight normalized bounding box [ymin, xmin, ymax, xmax] on 0-1000 scale")
     classification: str = Field(..., description='One of: "Manufacturing Defect", "Physical/Accidental Damage", "Cosmetic Wear"')
     summary: str = Field(..., description="2 sentences assessing the visual defect mechanism and warranty significance")
-    box: List[int] = Field(..., description="Tight normalized bounding box [ymin, xmin, ymax, xmax] on 0-1000 scale")
 
 
 class _FullScanResponse(BaseModel):
-    isDevice: bool = Field(..., description="True if a consumer electronic product is visible in the image")
-    brandName: str = Field("Unknown", description="Detected manufacturer brand")
-    identifiedProduct: str = Field(..., description="Full identified product name (e.g. HP Pavilion 15 Laptop)")
-    fairOemCostINR: float = Field(2800.0, description="Realistic authorized Indian OEM spare part cost in INR for primary defect")
-    isAuthenticPhoto: bool = Field(True, description="True if authentic optical camera photo, False if synthetic AI image")
-    aiGeneratedProbability: float = Field(0.02, description="Estimated probability (0.0-1.0) of AI generation")
-    authenticityNotes: str = Field(..., description="Brief optical sensor/lighting authenticity rationale")
-    applicableWarrantyClause: str = Field(..., description="Applicable manufacturer warranty clause or statutory ground")
-    legalRemedySummary: str = Field(..., description="Concise consumer law remedy summary under CPA 2019")
+    is_device: bool = Field(..., description="True if a consumer electronic product is visible in the image")
+    brand_name: str = Field("Unknown", description="Detected manufacturer brand")
+    identified_product: str = Field(..., description="Full identified product name (e.g. HP Pavilion 15 Laptop)")
+    material_type: str = Field("Mixed chassis", description="Primary chassis material observed")
+    surface_texture: str = Field("Standard finish", description="Overall chassis surface condition")
+    stress_indicators: str = Field("None", description="Global structural stress or fatigue observations")
+    impact_point_present: bool = Field(False, description="True ONLY if external drop impact trauma is visible on the chassis")
     defects: List[_DetectedDefect] = Field(default_factory=list, description="All genuine visible defects and wear spots")
+    fair_oem_cost_inr: float = Field(2800.0, description="Realistic authorized Indian OEM spare part cost in INR for primary defect")
+    is_authentic_photo: bool = Field(True, description="True if authentic optical camera photo, False if synthetic AI image")
+    ai_generated_probability: float = Field(0.02, description="Estimated probability (0.0-1.0) of AI generation")
+    authenticity_notes: str = Field(..., description="Brief optical sensor/lighting authenticity rationale")
+    applicable_warranty_clause: str = Field(..., description="Applicable manufacturer warranty clause or statutory ground")
+    legal_remedy_summary: str = Field(..., description="Concise consumer law remedy summary under CPA 2019")
 
 
 class _SecondarySpot(BaseModel):
     name: str = Field(..., description="Specific secondary defect or wear label (e.g. Palmrest Scuff, Corner Dent)")
-    partType: str = Field(..., description="Component where secondary mark is located (e.g. C-Cover Palmrest, Bottom Case)")
-    oemPartCode: str = Field("OEM-SEC-01", description="Component identifier")
+    part_type: str = Field(..., description="Component where secondary mark is located (e.g. C-Cover Palmrest, Bottom Case)")
+    oem_part_code: str = Field("OEM-SEC-01", description="Component identifier")
+    defect_box: List[int] = Field(..., description="Tight normalized bounding box [ymin, xmin, ymax, xmax] on 0-1000 scale")
     classification: str = Field(..., description='One of: "Manufacturing Defect", "Physical/Accidental Damage", "Cosmetic Wear"')
-    box: List[int] = Field(..., description="Tight normalized bounding box [ymin, xmin, ymax, xmax] on 0-1000 scale")
 
 
 class _SpecificScanResponse(BaseModel):
-    isDevice: bool = Field(..., description="True if a consumer electronic product is visible in the image")
-    brandName: str = Field("Unknown", description="Detected manufacturer brand")
-    identifiedProduct: str = Field(..., description="Full identified product name")
-    damageVerified: bool = Field(..., description="True if genuine physical damage exists inside the red-marked region")
-    identifiedPart: str = Field(..., description="Specific component name inside the marked region")
-    oemPartCode: str = Field("OEM-PART-01", description="Likely OEM spare part identifier")
+    # Stage 1: Device & Component Identity
+    is_device: bool = Field(..., description="True if a consumer electronic product is visible in the image")
+    brand_name: str = Field("Unknown", description="Detected manufacturer brand")
+    identified_product: str = Field(..., description="Full identified product name")
+    damage_verified: bool = Field(..., description="True if genuine physical damage exists inside the red-marked region")
+    identified_part: str = Field(..., description="Specific component name inside the marked region")
+    oem_part_code: str = Field("OEM-PART-01", description="Likely OEM spare part identifier")
+    # Stage 2: Raw Physical Evidence (Evaluated BEFORE Classification)
+    material_type: str = Field(..., description="Observed material of the marked component (e.g. polycarbonate ABS, aluminum alloy, LCD glass)")
+    surface_texture: str = Field(..., description="Macro surface texture from the unmarked crop (e.g. stress whitening, clean bezel paint, scratched lacquer)")
+    stress_indicators: str = Field(..., description="Fracture/stress mechanics visible in the macro crop (e.g. internal hinge boss shear, torsional bezel lift vs radial shatter)")
+    impact_point_present: bool = Field(..., description="True ONLY if a point of blunt-force external impact, radial spider-crack, or crushed corner is visible")
+    # Stage 3: Tight Coordinates & Final Verdict (Evaluated LAST)
+    defect_box: List[int] = Field(..., description="Tight normalized bounding box [ymin, xmin, ymax, xmax] (0-1000) tightly surrounding the defect inside the red mark")
     classification: str = Field(..., description='One of: "Manufacturing Defect", "Physical/Accidental Damage", "Cosmetic Wear"')
     analysis: str = Field(..., description="2-3 plain-English sentences assessing the defect, stress vs impact signs, and warranty liability")
-    defectBox: List[int] = Field(..., description="Tight normalized bounding box [ymin, xmin, ymax, xmax] (0-1000) tightly surrounding the defect inside the red mark")
-    fairOemCostINR: float = Field(2800.0, description="Realistic authorized Indian OEM spare part cost in INR for the marked part")
-    isAuthenticPhoto: bool = Field(True, description="True if authentic optical photo")
-    aiGeneratedProbability: float = Field(0.02, description="Estimated probability (0.0-1.0) of AI synthesis")
-    authenticityNotes: str = Field(..., description="Brief optical sensor/lighting authenticity rationale")
-    applicableWarrantyClause: str = Field(..., description="Applicable warranty clause or statutory ground")
-    legalRemedySummary: str = Field(..., description="Concise consumer law remedy summary under CPA 2019")
-    secondarySpots: List[_SecondarySpot] = Field(
+    fair_oem_cost_inr: float = Field(2800.0, description="Realistic authorized Indian OEM spare part cost in INR for the marked part")
+    is_authentic_photo: bool = Field(True, description="True if authentic optical photo")
+    ai_generated_probability: float = Field(0.02, description="Estimated probability (0.0-1.0) of AI synthesis")
+    authenticity_notes: str = Field(..., description="Brief optical sensor/lighting authenticity rationale")
+    applicable_warranty_clause: str = Field(..., description="Applicable warranty clause or statutory ground")
+    legal_remedy_summary: str = Field(..., description="Concise consumer law remedy summary under CPA 2019")
+    secondary_spots: List[_SecondarySpot] = Field(
         default_factory=list,
         description="Genuine secondary defects or wear spots visible OUTSIDE the marked region; empty list [] if rest of device is clean"
     )
-    independenceVerdict: str = Field("Structurally Independent", description='"Structurally Independent" or "Potentially Correlated"')
-    legalReasoning: str = Field(..., description="Causation assessment relating the marked defect and rest of chassis")
+    independence_verdict: str = Field("Structurally Independent", description='"Structurally Independent" or "Potentially Correlated"')
+    legal_reasoning: str = Field(..., description="Causation assessment relating the marked defect and rest of chassis")
 
 
 # ---------------------------------------------------------------------------
@@ -120,86 +141,6 @@ def safe_parse_json(raw_text: str) -> dict:
     # Iteratively remove trailing commas before } or ]
     cleaned = re.sub(r",\s*([}\]])", r"\1", cleaned)
     return json.loads(cleaned)
-
-
-def _preprocess_and_flatten_image(
-    image_bytes: bytes,
-    mime_type: str = "image/jpeg",
-    user_annotation: Optional[List[int]] = None,
-) -> Tuple[bytes, str]:
-    """
-    Normalizes EXIF orientation so coordinates match the browser canvas 1:1,
-    caps oversized images to 1600px max side, and if user_annotation [ymin, xmin, ymax, xmax]
-    is present, composites a bright red #EF4444 boundary mark onto the image sent to Gemini.
-    """
-    try:
-        with Image.open(io.BytesIO(image_bytes)) as img:
-            img = ImageOps.exif_transpose(img)
-            if img.mode != "RGB":
-                img = img.convert("RGB")
-
-            w, h = img.size
-            if w <= 2 or h <= 2:
-                # Tiny synthetic test image: avoid resampling artifacts
-                out = io.BytesIO()
-                img.save(out, format="JPEG", quality=92)
-                return out.getvalue(), "image/jpeg"
-
-            max_dim = max(w, h)
-            if max_dim > 1600:
-                scale = 1600.0 / max_dim
-                new_size = (max(1, int(round(w * scale))), max(1, int(round(h * scale))))
-                img = img.resize(new_size, Image.Resampling.LANCZOS)
-                w, h = img.size
-
-            if user_annotation and len(user_annotation) == 4:
-                ymin, xmin, ymax, xmax = user_annotation
-                x0 = max(0, min(w - 1, int(round((xmin / 1000.0) * w))))
-                y0 = max(0, min(h - 1, int(round((ymin / 1000.0) * h))))
-                x1 = max(x0 + 2, min(w - 1, int(round((xmax / 1000.0) * w))))
-                y1 = max(y0 + 2, min(h - 1, int(round((ymax / 1000.0) * h))))
-                draw = ImageDraw.Draw(img)
-                stroke_w = max(4, int(round(max(w, h) / 220)))
-                draw.rectangle([x0, y0, x1, y1], outline="#EF4444", width=stroke_w)
-
-            out = io.BytesIO()
-            img.save(out, format="JPEG", quality=92)
-            return out.getvalue(), "image/jpeg"
-    except Exception as e:
-        logger.debug(f"Image preprocessing skipped ({e}); sending original bytes.")
-        return image_bytes, mime_type
-
-
-def _map_classification(
-    raw_label: Optional[str],
-) -> Literal["MANUFACTURING_DEFECT", "COSMETIC_WEAR", "IMPACT_DAMAGE", "NORMAL_WEAR"]:
-    """Maps model classification strings faithfully without coercing non-warranty damage."""
-    text = (raw_label or "").strip().lower()
-    if "manufacturing" in text or text == "manufacturing_defect":
-        return "MANUFACTURING_DEFECT"
-    if "physical" in text or "accidental" in text or "impact" in text or "drop" in text or text == "impact_damage":
-        return "IMPACT_DAMAGE"
-    if "cosmetic" in text or text == "cosmetic_wear":
-        return "COSMETIC_WEAR"
-    if "normal" in text or text == "normal_wear":
-        return "NORMAL_WEAR"
-    return "COSMETIC_WEAR" if "scratch" in text or "scuff" in text else "MANUFACTURING_DEFECT"
-
-
-def _normalize_box(raw_box: Optional[List[int]]) -> Optional[List[int]]:
-    """Validates and clamps a [ymin, xmin, ymax, xmax] box onto the 0-1000 integer grid."""
-    if not isinstance(raw_box, (list, tuple)) or len(raw_box) != 4:
-        return None
-    try:
-        vals = [int(round(float(v))) for v in raw_box]
-    except Exception:
-        return None
-    ymin, xmin, ymax, xmax = [max(0, min(1000, v)) for v in vals]
-    if ymin >= ymax or xmin >= xmax:
-        return None
-    if (ymax - ymin) < 5 or (xmax - xmin) < 5:
-        return None
-    return [ymin, xmin, ymax, xmax]
 
 
 def _estimate_tier2_oem_cost(walk_in_quote: Optional[float] = None, brand: str = "HP") -> float:
@@ -231,9 +172,9 @@ def perform_spatial_triage(
     brand = (brand_name or "HP").strip()
     model = (model_name or "").strip()
     device_full = f"{brand} {model}".strip() if model else f"{brand} Laptop"
-    has_user_mark = bool(_normalize_box(user_annotation))
+    has_user_mark = bool(normalize_box(user_annotation))
 
-    processed_bytes, processed_mime = _preprocess_and_flatten_image(
+    overview_bytes, overview_mime, macro_crop_bytes = extract_dual_views(
         image_bytes=image_bytes,
         mime_type=mime_type,
         user_annotation=user_annotation if has_user_mark else None,
@@ -248,7 +189,7 @@ def perform_spatial_triage(
         user_desc_str = user_description or "Not provided — rely strictly on visual evidence in the photo."
 
         if not has_user_mark:
-            # MODE 1: Full Device Scan (matches _ref_detection app.js:2071-2101)
+            # MODE 1: Full Device Scan (Physics-First)
             prompt = f"""
 Inspect this consumer product photo thoroughly.
 User-provided Brand Hint: {brand}
@@ -256,54 +197,69 @@ User-provided Model Hint: {model if model else 'Auto-detect from visual chassis/
 Protection Plan: {purchase_type or 'Standard Hardware Warranty'}
 Customer Note: {user_desc_str}
 
-Tasks:
-1. First determine whether a real consumer electronic device or product is visible (`isDevice`). If NOT (e.g., blank photo, landscape, human, document, non-product object), set `isDevice: false` and `defects: []`.
+Tasks (follow Physics-First ordering strictly):
+1. First determine whether a real consumer electronic device or product is visible (`is_device`). If NOT (e.g., blank photo, landscape, human, document, non-product object), set `is_device: false` and `defects: []`.
 2. If a product IS visible:
-   - Identify the accurate `brandName` and `identifiedProduct` from visible logos, bezels, keyboards, or chassis form factor.
+   - Identify `brand_name` and `identified_product` from visible logos, bezels, keyboards, or chassis form factor.
+   - Observe raw physical evidence BEFORE classifying (`material_type`, `surface_texture`, `stress_indicators`, `impact_point_present`).
    - Identify ALL genuine visible defects, structural cracks, separated hinges, dents, impact shattering, or cosmetic wear spots on the product.
-   - For each defect found, return its `part`, `oemPartCode`, `classification` ("Manufacturing Defect" | "Physical/Accidental Damage" | "Cosmetic Wear"), `summary`, and TIGHT normalized bounding box `box: [ymin, xmin, ymax, xmax]` (0 to 1000 scale).
+   - For each defect found, fill physical evidence (`material_type`, `surface_texture`, `stress_indicators`, `impact_point_present`), then TIGHT normalized bounding box `defect_box: [ymin, xmin, ymax, xmax]` (0 to 1000 scale), then `classification` ("Manufacturing Defect" | "Physical/Accidental Damage" | "Cosmetic Wear"), and `summary`.
    - Do NOT invent defects or place boxes on clean areas or the desk.
-   - Provide `fairOemCostINR` for the primary detected spare component in India.
+   - Provide `fair_oem_cost_inr` for the primary detected spare component in India.
 """
             schema_cls = _FullScanResponse
         else:
-            norm_u = _normalize_box(user_annotation)
+            norm_u = normalize_box(user_annotation)
             user_box_str = f"[{norm_u[0]}, {norm_u[1]}, {norm_u[2]}, {norm_u[3]}]"
-            # MODE 2: Specific Marked Damage + Secondary Separation Scan (matches _ref_detection app.js:2103-2130 & 2514-2537)
+            # MODE 2: Single-Call Dual-Image Specific Marked Scan + Secondary Separation Scan
+            dual_view_note = (
+                "You are provided TWO views of the exact same photo:\n"
+                "- Image 1 (Overview): Full EXIF-corrected device photo with a 4px bright red rectangle drawn around the user's suspected defect.\n"
+                "- Image 2 (Macro Crop): Unmarked, native-resolution 20%-padded close-up crop of that exact region so you can inspect fracture physics without red-line occlusion.\n"
+                "Always output all bounding box coordinates (`defect_box` and `secondary_spots[].defect_box`) in the 0-1000 coordinate frame of Image 1 (Overview)."
+                if macro_crop_bytes
+                else "The user has drawn a 4px bright red rectangle highlight on the image around a suspected defect."
+            )
             prompt = f"""
 Inspect this consumer product photo.
 User-provided Brand Hint: {brand}
 User-provided Model Hint: {model if model else 'Auto-detect from visual chassis/logo'}
 Protection Plan: {purchase_type or 'Standard Hardware Warranty'}
 Customer Note: {user_desc_str}
-User's Red Rectangle Region (0-1000 scale): {user_box_str}
+User's Red Rectangle Region in Image 1 (0-1000 scale): {user_box_str}
 
-The user has drawn a bright red rectangle highlight on the image around a suspected defect.
+{dual_view_note}
 
-Tasks:
-1. First determine whether a real consumer electronic device or product is visible (`isDevice`). If NOT, set `isDevice: false`, `damageVerified: false`, and `defectBox: [0, 0, 0, 0]`.
-2. Focus primarily INSIDE or immediately overlapping the red-marked region {user_box_str}:
-   - Verify whether actual physical damage or wear is visible inside that region (`damageVerified: true/false`).
-   - Identify the exact `identifiedPart`, `oemPartCode`, `classification` ("Manufacturing Defect" | "Physical/Accidental Damage" | "Cosmetic Wear"), `analysis` (2-3 plain sentences citing visual stress vs impact evidence), and `defectBox: [ymin, xmin, ymax, xmax]` (0-1000 scale) tightly surrounding the defect.
-   - Estimate realistic `fairOemCostINR` for that component in India.
-3. Inspect the remaining surface of the product OUTSIDE `defectBox`:
-   - List any genuine secondary scratches, dents, or wear spots in `secondarySpots` with their tight `box: [ymin, xmin, ymax, xmax]` and true `classification`.
-   - If the rest of the chassis is completely clean, set `secondarySpots: []`.
+Tasks (follow Physics-First ordering strictly):
+1. First determine whether a real consumer electronic device or product is visible (`is_device`). If NOT, set `is_device: false`, `damage_verified: false`, and `defect_box: [0, 0, 0, 0]`.
+2. Focus primarily INSIDE or immediately overlapping the red-marked region {user_box_str} using the Macro Crop (Image 2) for fine material evidence:
+   - Verify whether actual physical damage or wear is visible (`damage_verified: true/false`), and identify `identified_part` and `oem_part_code`.
+   - Record raw physical observations BEFORE deciding the verdict: `material_type`, `surface_texture`, `stress_indicators`, and `impact_point_present` (True ONLY if blunt-force dent, crushed corner, or radial shatter is visible).
+   - Output `defect_box: [ymin, xmin, ymax, xmax]` (0-1000 scale in Image 1 coordinates) tightly surrounding the defect, then `classification` ("Manufacturing Defect" | "Physical/Accidental Damage" | "Cosmetic Wear") and `analysis`.
+   - Estimate realistic `fair_oem_cost_inr` for that component in India.
+3. Inspect the remaining surface of the product in Image 1 OUTSIDE `defect_box`:
+   - List any genuine secondary scratches, dents, or wear spots in `secondary_spots` with their tight `defect_box: [ymin, xmin, ymax, xmax]` and true `classification`.
+   - If the rest of the chassis is completely clean, set `secondary_spots: []`.
 """
             schema_cls = _SpecificScanResponse
 
-        image_part = types.Part.from_bytes(data=processed_bytes, mime_type=processed_mime)
+        overview_part = types.Part.from_bytes(data=overview_bytes, mime_type=overview_mime)
+        request_contents: list = [overview_part]
+        if macro_crop_bytes:
+            request_contents.append(types.Part.from_bytes(data=macro_crop_bytes, mime_type="image/jpeg"))
+        request_contents.append(prompt)
 
         for idx, model_id in enumerate(cascade_models):
             is_last = idx == len(cascade_models) - 1
             try:
                 logger.info(
                     f"Invoking multimodal vision model [{model_id}] "
-                    f"mode={'specific' if has_user_mark else 'full'} for target: {device_full}"
+                    f"mode={'specific_dual_view' if macro_crop_bytes else ('specific' if has_user_mark else 'full')} "
+                    f"for target: {device_full}"
                 )
                 response = client.models.generate_content(
                     model=model_id,
-                    contents=[image_part, prompt],
+                    contents=request_contents,
                     config=types.GenerateContentConfig(
                         temperature=0.1,
                         system_instruction=SYSTEM_TRIAGE_INSTRUCTION,
@@ -350,28 +306,43 @@ def _build_triage_result_from_live_json(
     fallback_model: str,
     elapsed_ms: float,
 ) -> SpatialTriageResult:
-    """Maps live Gemini Mode 1 or Mode 2 JSON accurately into SpatialTriageResult."""
-    is_device = bool(parsed.get("isDevice", True))
-    detected_brand = (parsed.get("brandName") or fallback_brand).strip()
+    """Maps live Gemini Mode 1 or Mode 2 Physics-First JSON accurately into SpatialTriageResult."""
+    is_device = bool(parsed.get("is_device", parsed.get("isDevice", True)))
+    detected_brand = (parsed.get("brand_name") or parsed.get("brandName") or fallback_brand).strip()
     if detected_brand.lower() in ("unknown", "none", ""):
         detected_brand = fallback_brand
-    detected_model = (parsed.get("identifiedProduct") or fallback_model).strip()
+    detected_model = (parsed.get("identified_product") or parsed.get("identifiedProduct") or fallback_model).strip()
     if detected_model.lower() in ("unknown", "none", ""):
         detected_model = fallback_model
 
-    fair_oem_cost = float(parsed.get("fairOemCostINR") or 2800.0)
+    fair_oem_cost = float(parsed.get("fair_oem_cost_inr") or parsed.get("fairOemCostINR") or 2800.0)
     if fair_oem_cost < 300.0:
         fair_oem_cost = 2800.0
 
-    is_authentic = bool(parsed.get("isAuthenticPhoto", True))
-    ai_prob = float(parsed.get("aiGeneratedProbability", 0.02))
+    is_authentic = bool(parsed.get("is_authentic_photo", parsed.get("isAuthenticPhoto", True)))
+    ai_prob = float(parsed.get("ai_generated_probability", parsed.get("aiGeneratedProbability", 0.02)))
     ai_prob = max(0.0, min(1.0, ai_prob))
-    auth_notes = parsed.get("authenticityNotes") or "Optical noise curves and lighting coherence verified."
+    auth_notes = (
+        parsed.get("authenticity_notes")
+        or parsed.get("authenticityNotes")
+        or "Optical noise curves and lighting coherence verified."
+    )
     ai_auth = AIAuthenticityCheck(
         is_authentic=is_authentic,
         ai_generated_probability=ai_prob,
         authenticity_verdict="AUTHENTIC_PHYSICAL_DEVICE" if is_authentic else "SUSPECTED_AI_SYNTHETIC",
         forensic_authenticity_notes=auth_notes,
+    )
+
+    applicable_clause = (
+        parsed.get("applicable_warranty_clause")
+        or parsed.get("applicableWarrantyClause")
+        or "Consumer Protection Act 2019 Sec 2(11) — Standard Hardware Warranty"
+    )
+    legal_remedy = (
+        parsed.get("legal_remedy_summary")
+        or parsed.get("legalRemedySummary")
+        or "Issue formal statutory notice under Consumer Protection Act 2019."
     )
 
     bounding_boxes: List[BoundingBox] = []
@@ -416,7 +387,7 @@ def _build_triage_result_from_live_json(
         defects = parsed.get("defects") or []
         valid_defects = []
         for d in defects:
-            n_box = _normalize_box(d.get("box"))
+            n_box = normalize_box(d.get("defect_box") or d.get("box"))
             if n_box:
                 valid_defects.append((d, n_box))
 
@@ -444,7 +415,7 @@ def _build_triage_result_from_live_json(
                 unannotated_damages=[],
                 warranty_clause_analysis=WarrantyClauseAnalysis(
                     eligible_for_free_repair=False,
-                    applicable_free_repair_clause=parsed.get("applicableWarrantyClause") or "No defect detected for claim",
+                    applicable_free_repair_clause=applicable_clause or "No defect detected for claim",
                     damages_not_covered=[],
                     legal_remedy_summary="No visible defect found; draw a reticle box on the affected area if subtle damage exists.",
                 ),
@@ -455,9 +426,16 @@ def _build_triage_result_from_live_json(
             )
 
         primary_raw, primary_box = valid_defects[0]
-        primary_cls = _map_classification(primary_raw.get("classification"))
+        primary_cls = map_classification(
+            primary_raw.get("classification"),
+            impact_point_present=bool(primary_raw.get("impact_point_present", False)),
+        )
         primary_part = primary_raw.get("part") or "Primary Component"
-        primary_code = primary_raw.get("oemPartCode") or f"OEM-{detected_brand[:3].upper()}-PART-01"
+        primary_code = (
+            primary_raw.get("oem_part_code")
+            or primary_raw.get("oemPartCode")
+            or f"OEM-{detected_brand[:3].upper()}-PART-01"
+        )
         primary_summary = primary_raw.get("summary") or f"Defect detected on {primary_part}."
 
         bounding_boxes.append(
@@ -475,9 +453,16 @@ def _build_triage_result_from_live_json(
         non_covered_labels: List[str] = []
         cosmetic_code: Optional[str] = None
         for sec_raw, sec_box in valid_defects[1:]:
-            sec_cls = _map_classification(sec_raw.get("classification"))
+            sec_cls = map_classification(
+                sec_raw.get("classification"),
+                impact_point_present=bool(sec_raw.get("impact_point_present", False)),
+            )
             sec_part = sec_raw.get("part") or "Secondary Component"
-            sec_code = sec_raw.get("oemPartCode") or f"OEM-{detected_brand[:3].upper()}-SEC-01"
+            sec_code = (
+                sec_raw.get("oem_part_code")
+                or sec_raw.get("oemPartCode")
+                or f"OEM-{detected_brand[:3].upper()}-SEC-01"
+            )
             sec_summary = sec_raw.get("summary") or sec_part
 
             bounding_boxes.append(
@@ -511,15 +496,25 @@ def _build_triage_result_from_live_json(
         forensic_report = primary_summary
         defect_summary = f"Full device scan on {detected_model} localized {len(bounding_boxes)} defect region(s); primary issue on {primary_part} classified as {primary_cls}."
     else:
-        # Mode 2: Specific Marked Damage + Separation Scan
-        damage_verified = bool(parsed.get("damageVerified", True))
-        primary_cls = _map_classification(parsed.get("classification"))
-        primary_part = parsed.get("identifiedPart") or "Marked Component"
-        primary_code = parsed.get("oemPartCode") or f"OEM-{detected_brand[:3].upper()}-PART-01"
+        # Mode 2: Specific Marked Damage + Separation Scan (Dual-View Physics-First)
+        damage_verified = bool(parsed.get("damage_verified", parsed.get("damageVerified", True)))
+        primary_cls = map_classification(
+            parsed.get("classification"),
+            impact_point_present=bool(parsed.get("impact_point_present", False)),
+        )
+        primary_part = parsed.get("identified_part") or parsed.get("identifiedPart") or "Marked Component"
+        primary_code = (
+            parsed.get("oem_part_code")
+            or parsed.get("oemPartCode")
+            or f"OEM-{detected_brand[:3].upper()}-PART-01"
+        )
         forensic_report = parsed.get("analysis") or f"Assessment of marked region on {primary_part}."
 
-        # Prefer Gemini's tightly fitted defectBox, falling back to user_annotation only if invalid
-        tight_box = _normalize_box(parsed.get("defectBox")) or _normalize_box(user_annotation)
+        # Prefer Gemini's tightly fitted defect_box, constrained to overlap the user reticle
+        tight_box = constrain_to_user_reticle(
+            parsed.get("defect_box") or parsed.get("defectBox"),
+            user_annotation,
+        )
 
         if tight_box and damage_verified:
             bounding_boxes.append(
@@ -536,14 +531,18 @@ def _build_triage_result_from_live_json(
 
         non_covered_labels = []
         cosmetic_code = None
-        for sec in parsed.get("secondarySpots") or []:
-            sec_box = _normalize_box(sec.get("box"))
+        for sec in parsed.get("secondary_spots") or parsed.get("secondarySpots") or []:
+            sec_box = normalize_box(sec.get("defect_box") or sec.get("box"))
             if not sec_box:
                 continue
-            sec_cls = _map_classification(sec.get("classification"))
-            sec_part = sec.get("partType") or sec.get("name") or "Secondary Surface"
+            sec_cls = map_classification(sec.get("classification"))
+            sec_part = sec.get("part_type") or sec.get("partType") or sec.get("name") or "Secondary Surface"
             sec_label = sec.get("name") or sec_part
-            sec_code = sec.get("oemPartCode") or f"OEM-{detected_brand[:3].upper()}-SEC-01"
+            sec_code = (
+                sec.get("oem_part_code")
+                or sec.get("oemPartCode")
+                or f"OEM-{detected_brand[:3].upper()}-SEC-01"
+            )
 
             bounding_boxes.append(
                 BoundingBox(
@@ -581,12 +580,7 @@ def _build_triage_result_from_live_json(
     # Dynamic Euclidean distance ONLY if 2 or more genuine boxes exist
     calc_separation_mm = 0.0
     if len(bounding_boxes) >= 2:
-        b1 = bounding_boxes[0].box_2d
-        b2 = bounding_boxes[1].box_2d
-        cy1, cx1 = (b1[0] + b1[2]) / 2.0, (b1[1] + b1[3]) / 2.0
-        cy2, cx2 = (b2[0] + b2[2]) / 2.0, (b2[1] + b2[3]) / 2.0
-        norm_dist = math.sqrt((cx1 - cx2) ** 2 + (cy1 - cy2) ** 2)
-        calc_separation_mm = round((norm_dist / 1000.0) * 360.0, 1)
+        calc_separation_mm = compute_separation_mm(bounding_boxes[0].box_2d, bounding_boxes[1].box_2d)
         if valid_unannotated:
             valid_unannotated[0].separation_from_primary_mm = calc_separation_mm
 
@@ -594,11 +588,12 @@ def _build_triage_result_from_live_json(
     if primary_cls != "MANUFACTURING_DEFECT" and damage_verified:
         non_covered_labels.insert(0, f"{primary_part} ({primary_cls.replace('_', ' ').title()})")
 
-    causation = parsed.get("legalReasoning") or forensic_report
+    causation = parsed.get("legal_reasoning") or parsed.get("legalReasoning") or forensic_report
+    independence = parsed.get("independence_verdict") or parsed.get("independenceVerdict") or "Structurally Independent"
     if calc_separation_mm > 0 and warranty_covered:
         causation = (
             f"Physical separation of {calc_separation_mm} mm between {primary_part} and secondary wear "
-            f"({parsed.get('independenceVerdict', 'Structurally Independent')}) refutes drop causation. {causation}"
+            f"({independence}) refutes drop causation. {causation}"
         )
 
     return SpatialTriageResult(
@@ -624,18 +619,24 @@ def _build_triage_result_from_live_json(
         unannotated_damages=valid_unannotated,
         warranty_clause_analysis=WarrantyClauseAnalysis(
             eligible_for_free_repair=warranty_covered,
-            applicable_free_repair_clause=parsed.get("applicableWarrantyClause")
-            or (
-                f"{detected_brand} Standard Limited Warranty & CPA 2019 Sec 2(10) / 2(11)"
-                if warranty_covered
-                else f"Standard Policy Exclusion ({primary_cls.replace('_', ' ').title()})"
+            applicable_free_repair_clause=(
+                parsed.get("applicable_warranty_clause")
+                or parsed.get("applicableWarrantyClause")
+                or (
+                    f"{detected_brand} Standard Limited Warranty & CPA 2019 Sec 2(10) / 2(11)"
+                    if warranty_covered
+                    else f"Standard Policy Exclusion ({primary_cls.replace('_', ' ').title()})"
+                )
             ),
             damages_not_covered=non_covered_labels,
-            legal_remedy_summary=parsed.get("legalRemedySummary")
-            or (
-                "Entitled to 100% free in-warranty repair under Consumer Protection Act 2019 Section 2(11)."
-                if warranty_covered
-                else "Primary classification falls outside standard free manufacturing-defect warranty coverage."
+            legal_remedy_summary=(
+                parsed.get("legal_remedy_summary")
+                or parsed.get("legalRemedySummary")
+                or (
+                    "Entitled to 100% free in-warranty repair under Consumer Protection Act 2019 Section 2(11)."
+                    if warranty_covered
+                    else "Primary classification falls outside standard free manufacturing-defect warranty coverage."
+                )
             ),
         ),
         is_device=True,
@@ -658,7 +659,7 @@ def _build_tier2_fallback_result(
     elapsed_ms = round((time.time() - start_time) * 1000, 1)
     logger.warning(f"All Tier 1 live models failed or client unavailable. Serving Tier 2 benchmark for {device_full}.")
 
-    norm_u = _normalize_box(user_annotation)
+    norm_u = normalize_box(user_annotation)
     primary_box = norm_u if norm_u else [280, 180, 460, 390]
     part_code = f"OEM-{brand.upper()[:3]}-MECH-01"
     fair_cost = _estimate_tier2_oem_cost(brand=brand)
