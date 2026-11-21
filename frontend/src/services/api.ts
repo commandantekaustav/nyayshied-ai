@@ -1,7 +1,7 @@
 import { ClaimAnalysisResponse, AuditLogEntry } from '../types/claim';
 import { GOLDEN_CASE_DATA } from '../data/goldenCase';
 
-const API_BASE_URL = 'http://localhost:8000';
+const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000').replace(/\/+$/, '');
 
 export interface ClaimSubmissionData {
   deviceImageFile: File | null;
@@ -68,9 +68,9 @@ export async function analyzeClaimAPI(data: ClaimSubmissionData): Promise<ClaimA
 
     const url = `${API_BASE_URL}/api/analyze-claim?use_golden_case=false`;
     
-    // 25-second timeout for live multimodal LLM inference
+    // 40-second timeout for live multimodal LLM inference & cascade
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 25000);
+    const timeoutId = setTimeout(() => controller.abort(), 40000);
 
     const response = await fetch(url, {
       method: 'POST',
@@ -151,7 +151,7 @@ export async function fetchAuditLogsAPI(): Promise<AuditLogEntry[]> {
     const res = await fetch(`${API_BASE_URL}/api/audit-logs`, { signal: AbortSignal.timeout(3000) });
     if (res.ok) {
       const data = await res.json();
-      return data.audit_logs || [];
+      return data.events || data.audit_logs || [];
     }
   } catch (e) {
     console.debug('Failed to fetch remote audit logs, using fallback logs:', e);

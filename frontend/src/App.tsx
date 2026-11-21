@@ -119,6 +119,9 @@ export const App: React.FC = () => {
               onDeviceImageChange={(file, preview) => {
                 setDeviceImage(file);
                 setImagePreview(preview);
+                setUserAnnotation(null);
+                setClaimData(null);
+                setIsApproved(false);
               }}
               onInvoiceFileChange={setInvoiceFile}
               onQuoteChange={setWalkInQuote}

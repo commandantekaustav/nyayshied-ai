@@ -40,6 +40,7 @@ def ensure_fernet_key(existing_key: str | None) -> str:
 
 class Settings:
     # GCP Vertex AI Config ($5 serverless pay-per-token credit safe)
+    USE_VERTEXAI: bool = os.getenv("USE_VERTEXAI", "true").strip().lower() in ("true", "1", "yes")
     GCP_PROJECT_ID: str = os.getenv("GCP_PROJECT_ID", "")
     GCP_LOCATION: str = os.getenv("GCP_LOCATION", "us-central1")
     GEMINI_API_KEY: str = os.getenv("GEMINI_API_KEY", "")
@@ -61,9 +62,14 @@ class Settings:
         if origin.strip()
     ]
 
-    # Models
-    VERTEX_MODEL_ID: str = os.getenv("VERTEX_MODEL_ID", "gemini-3.5-flash")
-    CRITIC_MODEL_ID: str = os.getenv("CRITIC_MODEL_ID", "gemini-3.5-flash")
+    # Models (Verified active Vertex AI / Gemini cascade: gemini-3.8-flash -> gemini-3.5-flash -> gemini-3.5-flash-lite)
+    VERTEX_MODEL_ID: str = os.getenv("VERTEX_MODEL_ID", "gemini-3.8-flash").strip()
+    CRITIC_MODEL_ID: str = os.getenv("CRITIC_MODEL_ID", "gemini-3.5-flash-lite").strip()
+    VERTEX_CASCADE_MODELS: List[str] = [
+        "gemini-3.8-flash",
+        "gemini-3.5-flash",
+        "gemini-3.5-flash-lite",
+    ]
 
     # Storage paths
     METRICS_LOG_PATH: Path = BACKEND_DIR / os.getenv("METRICS_LOG_PATH", "metrics.jsonl")

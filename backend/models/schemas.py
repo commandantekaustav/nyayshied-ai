@@ -52,6 +52,8 @@ class UnannotatedDamage(BaseModel):
     """
     box_2d: List[int] = Field(..., min_length=4, max_length=4)
     label: str = Field(..., description="Description of the unannotated defect or cosmetic mark")
+    part_type: str = Field("Component Surface", description="Hardware component where unannotated defect was found")
+    oem_part_code: Optional[str] = Field(None, description="OEM part code if identified")
     classification: Literal["COSMETIC_WEAR", "MANUFACTURING_DEFECT", "IMPACT_DAMAGE", "NORMAL_WEAR"] = "COSMETIC_WEAR"
     separation_from_primary_mm: float = Field(0.0, description="Euclidean physical separation from primary defect in mm")
 
@@ -85,7 +87,7 @@ class SpatialTriageResult(BaseModel):
     bounding_boxes: List[BoundingBox] = Field(default_factory=list)
     euclidean_separation_mm: float = Field(
         ...,
-        description="Physical Euclidean distance in mm between cosmetic surface marks and structural failure (>140mm proves non-drop).",
+        description="Physical Euclidean distance in mm between cosmetic surface marks and structural failure (0.0 mm if chassis is clean with a single defect; non-zero distance demonstrates spatial independence across distinct chassis planes).",
         ge=0.0
     )
     warranty_covered: bool = Field(..., description="True if physical defect stems from factory design/torque flaw")
@@ -94,6 +96,9 @@ class SpatialTriageResult(BaseModel):
     user_annotation_verification: Optional[UserAnnotationVerification] = None
     unannotated_damages: List[UnannotatedDamage] = Field(default_factory=list)
     warranty_clause_analysis: Optional[WarrantyClauseAnalysis] = None
+    is_device: bool = Field(True, description="False if uploaded photo does not contain a consumer electronic device")
+    estimated_fair_oem_cost_inr: float = Field(2500.0, description="Estimated fair Indian OEM spare part cost in INR")
+    is_fallback: bool = Field(False, description="True if Tier 2 deterministic benchmark engine was used instead of live AI")
     inference_latency_ms: float = Field(0.0, description="Model inference latency in milliseconds")
 
 

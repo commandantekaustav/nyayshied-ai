@@ -27,6 +27,8 @@ export interface UserAnnotationVerification {
 export interface UnannotatedDamage {
   box_2d: [number, number, number, number];
   label: string;
+  part_type?: string;
+  oem_part_code?: string;
   classification: 'COSMETIC_WEAR' | 'MANUFACTURING_DEFECT' | 'IMPACT_DAMAGE' | 'NORMAL_WEAR';
   separation_from_primary_mm: number;
 }
@@ -53,6 +55,9 @@ export interface SpatialTriageResult {
   user_annotation_verification?: UserAnnotationVerification | null;
   unannotated_damages?: UnannotatedDamage[];
   warranty_clause_analysis?: WarrantyClauseAnalysis | null;
+  is_device?: boolean;
+  estimated_fair_oem_cost_inr?: number;
+  is_fallback?: boolean;
   inference_latency_ms?: number;
 }
 
