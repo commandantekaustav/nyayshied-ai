@@ -2,13 +2,27 @@
 ### *Countering Customer-Induced Damage (CID) Pretexts & Unlawful Repair Price-Gouging via Google Multimodal AI*
 
 [![Google Startup Buildathon India 2026](https://img.shields.io/badge/Google%20Buildathon-India%202026-4285F4?style=for-the-badge&logo=google)](https://buildathon.withgoogle.com/)
-[![Gemini 2.5 Flash](https://img.shields.io/badge/Multimodal%20Vision-Gemini%202.5%20Flash-34A853?style=for-the-badge&logo=google-gemini)](https://deepmind.google/technologies/gemini/)
-[![Gemma 3 Statutory Critic](https://img.shields.io/badge/Legal%20Critic-Gemma%203-EA4335?style=for-the-badge&logo=google)](https://ai.google.dev/gemma)
+[![Vertex AI Gemini 3.8 Flash](https://img.shields.io/badge/Vertex%20AI-Gemini%203.8%20Flash-34A853?style=for-the-badge&logo=google-gemini)](https://cloud.google.com/vertex-ai)
+[![Google Cloud Run](https://img.shields.io/badge/Cloud%20Run-asia--south1-4285F4?style=for-the-badge&logo=google-cloud)](https://nyayshield-backend-1026327416018.asia-south1.run.app/api/health)
+[![Firebase Hosting](https://img.shields.io/badge/Live%20PWA-Firebase%20Hosting-FFCA28?style=for-the-badge&logo=firebase)](https://nyayshield-ai-kaustav.web.app)
+[![Gemma 3 Statutory Critic](https://img.shields.io/badge/Legal%20Critic-Gemma%203%20%2F%203.5%20Lite-EA4335?style=for-the-badge&logo=google)](https://ai.google.dev/gemma)
 [![FastAPI](https://img.shields.io/badge/Backend-FastAPI%20Async-009688?style=for-the-badge&logo=fastapi)](https://fastapi.tiangolo.com/)
 [![React 18 + Vite](https://img.shields.io/badge/Edge%20Client-React%2018%20%2B%20Vite-61DAFB?style=for-the-badge&logo=react)](https://react.dev/)
 [![CPA 2019 Grounded](https://img.shields.io/badge/Statutory%20Framework-CPA%202019%20Sec%202(11)%20%7C%202(47)%20%7C%2035-FBBC05?style=for-the-badge)](https://consumeraffairs.nic.in/)
 [![Fernet AES-128](https://img.shields.io/badge/Evidence%20Lock-Fernet%20AES--128%20%2B%20SHA--256-4A154B?style=for-the-badge)](https://cryptography.io/)
 [![Lineage: Clause-n-Effect](https://img.shields.io/badge/Lineage-Clause--n--Effect%20(Open%20Source)-00A98F?style=for-the-badge&logo=github)](https://github.com/commandantekaustav/clause-n-effect)
+
+---
+
+## 🌐 Live Production Deployment (Google Cloud)
+
+| Service | Platform | Live Endpoint |
+| :--- | :--- | :--- |
+| **Frontend PWA** | **Firebase Hosting** | https://nyayshield-ai-kaustav.web.app |
+| **Backend API** | **Google Cloud Run (`asia-south1`)** | https://nyayshield-backend-1026327416018.asia-south1.run.app |
+| **Health & Telemetry** | **Cloud Run `/api/health`** | https://nyayshield-backend-1026327416018.asia-south1.run.app/api/health |
+
+> **Built by:** **Kaustav Basu** ([@commandantekaustav](https://github.com/commandantekaustav)) for **Google Startup Buildathon India 2026**.
 
 ---
 
@@ -39,7 +53,7 @@
 
 When consumers encounter mechanical failures in consumer electronics—such as brittle display hinge seizures, cracked bezel brackets, or separated chassis clips—authorized service centers routinely deny free warranty repair. Service centers assign arbitrary exclusion codes (**CID / Customer Induced Damage**, **ZEXW**) and demand exorbitant repair quotations (e.g., demanding **₹20,000** for a complete display replacement when the underlying fault is an **₹2,500** hinge fastener).
 
-**NyayShield AI** provides an autonomous forensic counter-shield, combining Google Multimodal Vision (`gemini-2.5-flash`), legal reasoning (`gemma-3`), and deterministic price-gouging mathematical rules grounded in the **Consumer Protection Act, 2019**.
+**NyayShield AI** provides an autonomous forensic counter-shield, combining **Google Vertex AI Multimodal Vision** (`gemini-3.8-flash` → `gemini-3.5-flash` → `gemini-3.5-flash-lite` active cascade), **Parallel Self-Consistency Majority Voting**, grounded statutory reasoning (`gemini-3.5-flash-lite` / Gemma 3 Critic), and deterministic price-gouging mathematical rules under the **Consumer Protection Act, 2019**.
 
 ### 💼 Commercial Scopes:
 ```
@@ -62,10 +76,10 @@ When consumers encounter mechanical failures in consumer electronics—such as b
 
 ## ⚡ The 6 Core Engineering Feats
 
-1. **Multimodal Spatial Vision Defect Triage (Gemini 2.5 Flash)**:
-   - Uses normalized 2D bounding boxes `[ymin, xmin, ymax, xmax]` on a `0-1000` integer coordinate grid.
-   - Automatically parses user-drawn rectangular reticles to verify mechanical fatigue within user-marked areas.
-   - Scans remaining chassis area for cosmetic blemishes and computes **Euclidean physical separation** ($>140\text{ mm}$), mathematically proving that cosmetic scuffs did not induce the structural hinge fracture.
+1. **Single-Call Dual-View Spatial Triage & Self-Consistency Voting (Vertex AI `gemini-3.8-flash`)**:
+   - Normalizes EXIF orientation and sends **two complementary views in a single multimodal call**: a `4px` `#EF4444` red-reticle overview + an unmarked, 20%-padded native-resolution macro crop enhanced with `autocontrast` and `Sharpness(1.4)` (`backend/services/vision/image_prep.py`).
+   - Enforces a **Physics-First Pydantic `response_schema`** (`material_type`, `surface_texture`, `stress_indicators`, `impact_point_present` evaluated *before* `classification`) plus deterministic geometry guardrails (`backend/services/vision/geometry_guard.py`: `impact_point_present == True → IMPACT_DAMAGE`, `0–1000` `[ymin, xmin, ymax, xmax]` sanitization, and user-reticle overlap constraint).
+   - Executes a **Parallel Self-Consistency Majority Vote** (`asyncio.gather` 2-run consensus box averaging + 2-vs-1 tie-breaker) to eliminate single-pass variance without inflating latency.
 
 2. **Forensic Bayer Matrix Optical Noise Gate (AI Fake Detector)**:
    - Screens uploaded imagery for synthetic generative AI artifacts, diffusion hallucinations, and unphysical specular reflections using sensor noise response curves.
@@ -104,8 +118,8 @@ flowchart TD
 
     subgraph NyayShieldCore ["NyayShield AI Platform (Edge + Cloud)"]
         PWA["Mobile-First PWA (React 18 + Vite + Tailwind)"]
-        APIGateway["FastAPI Gateway (Port 8000 / Cloudflare Tunnel)"]
-        VisionEngine["Multimodal Defect Triage (Gemini 2.5 Flash)"]
+        APIGateway["FastAPI Gateway (Google Cloud Run — asia-south1)"]
+        VisionEngine["Multimodal Defect Triage (Gemini 3.8 Flash)"]
         PricingEngine["Deterministic Price-Gouging Rule Engine"]
         LegalCritic["Grounded Statutory Drafter & Critic (Gemma 3)"]
         CryptoVault["Fernet AES-128 & SHA-256 Cryptographic Vault"]
@@ -162,7 +176,7 @@ flowchart TD
     end
 
     subgraph AICloudContainer ["Google AI Cloud Services"]
-        GeminiFlash["Gemini 2.5 Flash (Vision & Spatial BBoxes)"]
+        GeminiFlash["Gemini 3.8 Flash (Vision & Spatial BBoxes)"]
         GemmaCritic["Gemma 3 / Gemini 2.5 Pro (Statutory Critic)"]
     end
 
@@ -184,7 +198,7 @@ flowchart TD
 flowchart LR
     Upload["Raw Device Image"] --> FakeFilter{"Forensic Bayer Noise Filter"}
     FakeFilter -->|"AI Hallucinated / Fake"| RejectFake["Flag Suspicious Synthetic Photo\\n(B2B Fraud Prevention)"]
-    FakeFilter -->|"Authentic Physical Capture"| MultimodalTriage["Gemini 2.5 Flash Multimodal Vision"]
+    FakeFilter -->|"Authentic Physical Capture"| MultimodalTriage["Gemini 3.8 Flash Multimodal Vision"]
 
     subgraph SpatialDecomposition ["Spatial Reticle & Chassis Decomposition"]
         MultimodalTriage --> Box1["User Reticle: [ymin, xmin, ymax, xmax]\\n(Right Display Hinge & Bezel Clip)"]
@@ -260,7 +274,7 @@ sequenceDiagram
     participant Canvas as Reticle Canvas UI
     participant WebSpeech as Web Speech Audio API
     participant Gateway as FastAPI REST Gateway
-    participant AI as Gemini 2.5 Flash
+    participant AI as Gemini 3.8 Flash
     participant Rules as Price-Gouging Engine
     participant Critic as Gemma 3 Legal Critic
     participant Vault as Cryptographic Vault
@@ -310,7 +324,7 @@ sequenceDiagram
     participant B2BPortal as Claims Dashboard
     participant API as NyayShield Gateway
     participant FakeDetector as Bayer Noise Sensor
-    participant Triage as Gemini 2.5 Flash
+    participant Triage as Gemini 3.8 Flash
 
     Adjuster->>B2BPortal: Submits incoming customer warranty claim image
     B2BPortal->>API: POST /api/analyze-claim (Claim Bundle)
@@ -369,10 +383,10 @@ sequenceDiagram
 | **Voice Synthesis**| Web Speech API | Native Browser W3C | Localized multi-lingual speech playback (`en-IN`, `hi-IN`, `bn-IN`) |
 | **Backend Gateway**| FastAPI + Uvicorn | FastAPI 0.115 / Python 3.11 | High-throughput asynchronous REST gateway |
 | **Data Contracts** | Pydantic v2 | Pydantic 2.10 | Strict type validation, OpenAPI schemas |
-| **Primary Vision** | Google Gemini 2.5 Flash | `gemini-2.5-flash` | Multimodal spatial defect reticle triage and OEM part tagging |
-| **Statutory Critic**| Google Gemma 3 | `gemma-3-27b-it` / `gemini-2.5-pro` | Grounded statutory criticism under Consumer Protection Act 2019 |
+| **Primary Vision** | Google Vertex AI (`gemini-3.8-flash`) | `gemini-3.8-flash` → `3.5-flash` → `3.5-flash-lite` | Dual-view spatial defect triage, Physics-First schema, and parallel self-consistency majority vote |
+| **Statutory Critic**| Vertex AI Critic (`gemini-3.5-flash-lite` / Gemma 3) | `gemini-3.5-flash-lite` | Grounded statutory verification under Consumer Protection Act 2019 |
 | **Cryptography** | Python Cryptography | Fernet (AES-128-CBC + HMAC) | PII anonymization and zero-knowledge claim telemetry encryption |
-| **Tunnel / Edge** | Cloudflare Tunnel | `trycloudflare.com` | Zero-latency external mobile testing gateway |
+| **Cloud Deployment**| Google Cloud Run + Firebase Hosting | `asia-south1` / Global CDN | Serverless container backend (`nyayshield-backend`) + Firebase Hosting PWA (`nyayshield-ai-kaustav.web.app`) |
 
 ---
 
@@ -422,8 +436,8 @@ To prevent documentation drift, NyayShield AI features an **Automated Documentat
 ### 2. Backend Setup
 ```bash
 # Clone repository
-git clone https://github.com/Kaustav-Kundu-07/NyayShield-AI.git
-cd NyayShield-AI
+git clone https://github.com/commandantekaustav/nyayshield-ai.git
+cd nyayshield-ai
 
 # Create virtual environment & install dependencies
 python -m venv backend/.venv
@@ -460,7 +474,7 @@ npm run dev -- --host 0.0.0.0 --port 5173
 | :--- | :---: | :--- |
 | **1. Functional Product & Implementation** | **30%** | Live end-to-end PWA, interactive reticle canvas, real-time price-gouging calculator, tri-lingual notice generation, and instant Golden Case #001 offline fallback. |
 | **2. Technical Architecture & Engineering Quality** | **20%** | FastAPI async gateway, React Vite PWA, Fernet AES-128 encryption, SHA-256 evidence lock, and live millisecond latency telemetry. |
-| **3. Google AI Integration & Depth** | **20%** | Gemini 2.5 Flash multimodal spatial defect triage (`[ymin, xmin, ymax, xmax]`) + Gemma 3 statutory legal critic. |
+| **3. Google AI Integration & Depth** | **20%** | Vertex AI (`gemini-3.8-flash` cascade) dual-view spatial defect triage (`[ymin, xmin, ymax, xmax]`), parallel self-consistency majority voting, and grounded statutory legal critic deployed live on Cloud Run + Firebase Hosting. |
 | **4. Problem-Solution Alignment & Impact** | **15%** | Eliminates fraudulent warranty rejections under CPA 2019 Sec 2(11), 2(47) & e-Jagriti Sec 35 digital filing. |
 | **5. UX, Usability & Accessibility** | **10%** | Mobile-first touch reticle, 1-tap EN/HI/BN toggle, and native Web Speech API legal notice narration. |
 | **6. Innovation & Differentiation** | **5%** | Bayer matrix optical noise fake image detector, Karpathy anti-phantom vision evaluation protocol, and part-level BOM multiplier engine. |
@@ -470,7 +484,7 @@ npm run dev -- --host 0.0.0.0 --port 5173
 
 ## 🧬 Architectural Lineage & Credits to Clause-n-Effect
 
-NyayShield AI is an architectural derivative and direct engineering evolution of [**Clause-n-Effect**](https://github.com/commandantekaustav/clause-n-effect), the open-source corporate legal compliance and forensic auditing engine authored by **Kaustav Kundu**.
+NyayShield AI is an architectural derivative and direct engineering evolution of [**Clause-n-Effect**](https://github.com/commandantekaustav/clause-n-effect), the open-source corporate legal compliance and forensic auditing engine authored by **Kaustav Basu** ([@commandantekaustav](https://github.com/commandantekaustav)).
 
 ```mermaid
 flowchart TD
@@ -484,7 +498,7 @@ flowchart TD
 
     subgraph NyayShieldAI ["Evolution: NyayShield AI (Google Startup Buildathon India 2026)"]
         ConsumerLaw["Consumer Electronics Warranty Law (CPA 2019 § 2(11), § 2(47), § 35)"]
-        MultimodalVision["Multimodal Spatial Reticle Triage (Gemini 2.5 Flash BBoxes)"]
+        MultimodalVision["Multimodal Spatial Reticle Triage (Gemini 3.8 Flash BBoxes)"]
         BayerFakeGate["Bayer Matrix & CFA Sensor Fake Image Detector"]
         GougingEngine["Deterministic Part-Level Price-Gouging Multiplier Engine"]
         GemmaCritic["Gemma 3 Statutory Legal Critic (0% Hallucinations, EN/HI/BN)"]
@@ -508,7 +522,7 @@ flowchart TD
 | **Adversarial Legal Critic** | 8B Corporate HR Defense node red-teaming litigator claims to catch uncited labor provisions. | Evolved into the **Gemma 3 Statutory Critic**, enforcing 0% hallucinated citations under CPA 2019 Sections 2(11), 2(47), and 35. | **Evolved & Upgraded** |
 | **State Machine & Ledger** | LangGraph cyclic graph + local `track.json` latency execution ledger. | Evolved into a deterministic **6-State SLA Dispute Resolution Loop** with real-time audit logging and `metrics.jsonl` persistence. | **Evolved & Standardized** |
 | **Domain Transformation** | Indian Contract Act 1872 (§ 27 non-competes), Industrial Disputes Act 1947, POSH 2013. | Shifted to **Consumer Protection Act, 2019** (§ 2(11) Deficiency of Service, § 2(47) Unfair Trade Practice, § 35 e-Jagriti). | **Expanded Domain** |
-| **Multimodal Spatial Vision** | N/A (Text-only contract & email parsing). | **Brand-New Feat**: Gemini 2.5 Flash normalized 2D bounding boxes `[ymin, xmin, ymax, xmax]` + interactive touch reticle canvas. | **Novel Capability** |
+| **Multimodal Spatial Vision** | N/A (Text-only contract & email parsing). | **Brand-New Feat**: Gemini 3.8 Flash normalized 2D bounding boxes `[ymin, xmin, ymax, xmax]` + interactive touch reticle canvas. | **Novel Capability** |
 | **Synthetic Fake Detector** | N/A. | **Brand-New Feat**: Forensic Bayer optical noise response curve screening to detect AI-generated fake damage. | **Novel Capability** |
 
 ---
@@ -579,7 +593,7 @@ flowchart TD
 ---
 
 ## 👥 Contributors & Branch Organization
-- **Kaustav Kundu** (`main`) — Core Multimodal AI, Architecture, Cryptography & Statutory Engine.
+- **Kaustav Basu** ([@commandantekaustav](https://github.com/commandantekaustav)) — Core Multimodal AI, Vertex AI Vision Pipeline, Cloud Run/Firebase Deployment, Cryptography & Statutory Engine.
 - **Anwesha** (`feat/b1-claims-enhancement`) — B1 Enterprise Claims & UI Dashboards.
 - **Ishika** (`test/ishika-hardware-eval`) — Hardware Defect Evaluation & Alpha Testing.
 
