@@ -1,8 +1,11 @@
+import asyncio
+from collections import Counter
+from concurrent.futures import ThreadPoolExecutor
 import json
 import logging
 import re
 import time
-from typing import Optional, List
+from typing import Callable, Optional, List, Tuple
 
 from google.genai import types
 from pydantic import BaseModel, Field
@@ -143,6 +146,129 @@ def safe_parse_json(raw_text: str) -> dict:
     return json.loads(cleaned)
 
 
+def _extract_vote_signature(
+    parsed: dict,
+    has_user_mark: bool,
+) -> Tuple[bool, str, Optional[List[int]]]:
+    """Extracts (is_device, canonical_classification, sanitized_box) enforcing physics invariants."""
+    is_device = bool(parsed.get("is_device", parsed.get("isDevice", True)))
+    if not is_device:
+        return False, "NO_DEVICE", None
+
+    if has_user_mark:
+        cls = map_classification(
+            parsed.get("classification"),
+            impact_point_present=bool(parsed.get("impact_point_present", False)),
+        )
+        box = normalize_box(parsed.get("defect_box") or parsed.get("defectBox"))
+        return True, cls, box
+
+    defects = parsed.get("defects") or []
+    if not defects:
+        return True, "NO_DEFECT", None
+    d0 = defects[0]
+    cls = map_classification(
+        d0.get("classification"),
+        impact_point_present=bool(d0.get("impact_point_present", False)),
+    )
+    box = normalize_box(d0.get("defect_box") or d0.get("box"))
+    return True, cls, box
+
+
+def _average_consensus_boxes(
+    boxes: List[Optional[List[int]]],
+    has_user_mark: bool,
+    user_annotation: Optional[List[int]],
+) -> Optional[List[int]]:
+    """Averages valid [ymin, xmin, ymax, xmax] boxes and applies spatial reticle guardrails."""
+    valid = [b for b in (normalize_box(x) for x in boxes) if b is not None]
+    if not valid:
+        return normalize_box(user_annotation) if has_user_mark else None
+    avg = [int(round(sum(b[i] for b in valid) / len(valid))) for i in range(4)]
+    return constrain_to_user_reticle(avg, user_annotation) if has_user_mark else normalize_box(avg)
+
+
+def _with_consensus_box(parsed: dict, avg_box: Optional[List[int]], has_user_mark: bool) -> dict:
+    """Returns a shallow copy of parsed JSON with the averaged consensus defect_box applied."""
+    out = dict(parsed)
+    if avg_box is None:
+        return out
+    if has_user_mark:
+        out["defect_box"] = avg_box
+    elif out.get("defects"):
+        defects_copy = list(out["defects"])
+        d0 = dict(defects_copy[0])
+        d0["defect_box"] = avg_box
+        defects_copy[0] = d0
+        out["defects"] = defects_copy
+    return out
+
+
+async def _run_self_consistency_vote(
+    invoke_once: Callable[[], dict],
+    has_user_mark: bool,
+    user_annotation: Optional[List[int]] = None,
+) -> dict:
+    """
+    Parallel Self-Consistency Majority Vote:
+    - Fires 2 concurrent inference calls via asyncio.gather (~1.5-2s total latency).
+    - If both agree on (is_device, canonical_classification), averages their sanitized
+      defect_box coordinates and applies constrain_to_user_reticle.
+    - If they disagree, fires 1 tie-breaker call and returns the 2-vs-1 majority winner
+      with averaged boxes from the agreeing pair.
+    """
+    results = await asyncio.gather(
+        asyncio.to_thread(invoke_once),
+        asyncio.to_thread(invoke_once),
+        return_exceptions=True,
+    )
+
+    valid_runs: List[dict] = [r for r in results if isinstance(r, dict)]
+    if not valid_runs:
+        first_err = next((r for r in results if isinstance(r, BaseException)), RuntimeError("Inference failed"))
+        raise first_err
+    if len(valid_runs) == 1:
+        return valid_runs[0]
+
+    r1, r2 = valid_runs[0], valid_runs[1]
+    sig1 = _extract_vote_signature(r1, has_user_mark)
+    sig2 = _extract_vote_signature(r2, has_user_mark)
+
+    if sig1[:2] == sig2[:2]:
+        avg_box = _average_consensus_boxes([sig1[2], sig2[2]], has_user_mark, user_annotation)
+        return _with_consensus_box(r1, avg_box, has_user_mark)
+
+    logger.info(f"Self-consistency disagreement {sig1[:2]} vs {sig2[:2]}; firing 1 tie-breaker call.")
+    try:
+        r3 = await asyncio.to_thread(invoke_once)
+    except Exception as e:
+        logger.warning(f"Tie-breaker call failed ({e}); using primary run.")
+        return r1
+
+    sig3 = _extract_vote_signature(r3, has_user_mark)
+    candidates = [(r1, sig1), (r2, sig2), (r3, sig3)]
+    vote_counts = Counter(sig[:2] for _, sig in candidates)
+    winner_key, winner_count = vote_counts.most_common(1)[0]
+
+    if winner_count >= 2:
+        agreeing = [(r, sig) for r, sig in candidates if sig[:2] == winner_key]
+        avg_box = _average_consensus_boxes([sig[2] for _, sig in agreeing], has_user_mark, user_annotation)
+        return _with_consensus_box(agreeing[0][0], avg_box, has_user_mark)
+
+    # 3-way split fallback: use tie-breaker run
+    return r3
+
+
+def _execute_coro_sync(coro) -> dict:
+    """Safely executes an async coroutine whether or not an event loop is already running."""
+    try:
+        asyncio.get_running_loop()
+    except RuntimeError:
+        return asyncio.run(coro)
+    with ThreadPoolExecutor(max_workers=1) as pool:
+        return pool.submit(asyncio.run, coro).result()
+
+
 def _estimate_tier2_oem_cost(walk_in_quote: Optional[float] = None, brand: str = "HP") -> float:
     """Deterministic Indian OEM benchmark baseline inspired by _ref_detection Tier 2 engine."""
     if walk_in_quote and walk_in_quote > 0:
@@ -253,26 +379,34 @@ Tasks (follow Physics-First ordering strictly):
             is_last = idx == len(cascade_models) - 1
             try:
                 logger.info(
-                    f"Invoking multimodal vision model [{model_id}] "
+                    f"Invoking multimodal vision model [{model_id}] (2-way parallel self-consistency) "
                     f"mode={'specific_dual_view' if macro_crop_bytes else ('specific' if has_user_mark else 'full')} "
                     f"for target: {device_full}"
                 )
-                response = client.models.generate_content(
-                    model=model_id,
-                    contents=request_contents,
-                    config=types.GenerateContentConfig(
-                        temperature=0.1,
-                        system_instruction=SYSTEM_TRIAGE_INSTRUCTION,
-                        response_mime_type="application/json",
-                        response_schema=schema_cls,
-                    ),
+
+                def _invoke_once(mid: str = model_id) -> dict:
+                    resp = client.models.generate_content(
+                        model=mid,
+                        contents=request_contents,
+                        config=types.GenerateContentConfig(
+                            temperature=0.1,
+                            system_instruction=SYSTEM_TRIAGE_INSTRUCTION,
+                            response_mime_type="application/json",
+                            response_schema=schema_cls,
+                        ),
+                    )
+                    raw_text = resp.text or ""
+                    if not raw_text:
+                        raise ValueError(f"Empty response text from {mid}")
+                    return safe_parse_json(raw_text)
+
+                parsed = _execute_coro_sync(
+                    _run_self_consistency_vote(
+                        invoke_once=_invoke_once,
+                        has_user_mark=has_user_mark,
+                        user_annotation=user_annotation,
+                    )
                 )
-
-                raw_text = response.text or ""
-                if not raw_text:
-                    raise ValueError(f"Empty response text from {model_id}")
-
-                parsed = safe_parse_json(raw_text)
                 elapsed_ms = round((time.time() - start_time) * 1000, 1)
 
                 return _build_triage_result_from_live_json(
